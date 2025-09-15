@@ -7,6 +7,7 @@ cache_dir = './.cache'
 
 [[project.requirements]]
 contract_id = 'SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9.nft-trait'
+
 [contracts.sim-pox]
 path = 'contracts/sim-pox.clar'
 clarity_version = 3
@@ -39,6 +40,16 @@ epoch = 3.1
 
 [contracts.stackpot-vrf]
 path = 'contracts/stackpot-vrf.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.stackspot-distribute-rewards]
+path = 'contracts/stackspot-distribute-rewards.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.stackspot-distribution-trait]
+path = 'contracts/stackspot-distribution-trait.clar'
 clarity_version = 3
 epoch = 3.1
 [repl.analysis]

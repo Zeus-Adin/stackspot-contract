@@ -5,19 +5,18 @@
 (define-constant UNAUTHORIZED_POT_OWNER (err u108))
 (define-constant NOT_FOUND (err u109))
 (define-constant INSUFFICIENT_BALANCE (err u110))
+(define-constant UNAUTHORIZED_POT (err u111))
 
 ;; Platform address
 (define-constant platform-treasury tx-sender)
 
 ;; NFT Declaration
 (define-non-fungible-token stackpot-pot uint)
-(define-map token-owner-ids
-    principal
-    uint
-)
+(define-map pot-contract-with-index principal uint)
+(define-map pot-id-info uint {pot-id: uint, pot-name: (string-ascii 255), pot-owner: principal, pot-contract: principal})
 
 ;; NFT variables
-(define-data-var last-token-id uint u0)
+(define-data-var last-pot-index uint u0)
 
 ;; NFT errors
 (define-constant err-owner-only (err u100))
@@ -44,30 +43,40 @@
     (let (
             (owner (get owner pot-values))
             (contract-address (get contract pot-values))
+
             (contract-info (unwrap! (principal-destruct? contract-address) NOT_FOUND))
             (contract-name (get name contract-info))
             (contract-version (get version contract-info))
             (contract-hash-bytes (get hash-bytes contract-info))
             (new-pot-owner-balance (stx-get-balance owner))
+
             (platform-contracts-fee (var-get fee))
         )
-        (asserts! (> new-pot-owner-balance platform-contracts-fee)
-            INSUFFICIENT_BALANCE
-        )
+        (asserts! (>= new-pot-owner-balance platform-contracts-fee) INSUFFICIENT_BALANCE)
+        (asserts! (is-eq tx-sender owner) UNAUTHORIZED_POT_OWNER)
 
         ;; Mint NFT
         (try! (mint contract-address))
 
+        ;; Log pot registered
+        (try! (log-participant {
+            pot-id: (var-get last-pot-index),
+            participant-id: u0,
+            participant-address: contract-address,
+            participant-amount: new-pot-owner-balance,
+            participant-timestamp: stacks-block-height,
+        }))
+
         ;; Print event
         (print {
             event: "pot registered",
-            nft-id: (+ (var-get last-token-id) u1),
+            nft-id: (var-get last-pot-index),
             owner: owner,
             contract-address: contract-address,
             contract-name: contract-name,
             contract-version: contract-version,
             contract-hash-bytes: contract-hash-bytes,
-            platform-contracts-fee: platform-contracts-fee,
+            platform-contract-fee: platform-contracts-fee,
         })
 
         (ok true)
@@ -129,7 +138,7 @@
 ;; NFT actions
 ;; TODO: Implement get-token-uri and get-owner
 (define-read-only (get-last-token-id)
-    (ok (var-get last-token-id))
+    (ok (var-get last-pot-index))
 )
 
 (define-read-only (get-token-uri (token-id uint))
@@ -140,12 +149,8 @@
     (ok (nft-get-owner? stackpot-pot token-id))
 )
 
-(define-read-only (get-owner-token-id (owner principal))
-    (map-get? token-owner-ids owner)
-)
-
 (define-read-only (get-token-id (owner principal))
-    (ok (nft-get-owner? stackpot-pot (unwrap! (get-owner-token-id owner) NOT_FOUND)))
+    (ok (map-get? pot-contract-with-index owner))
 )
 
 (define-public (transfer
@@ -161,25 +166,58 @@
 
 (define-public (mint (recipient principal))
     (let (
-            (token-id (+ (var-get last-token-id) u1))
+            (token-id (+ (var-get last-pot-index) u1))
             (platform-contracts-fee (var-get fee))
+            (contract-info (unwrap! (principal-destruct? recipient) NOT_FOUND))
+            (contract-name (get name contract-info))
         )
-        (asserts! (is-eq tx-sender recipient) err-not-permitted)
-        (asserts! (not (is-eq tx-sender platform-treasury))
-            err-owner-not-permitted
-        )
-        (asserts! (not (is-eq platform-treasury recipient))
-            err-owner-not-permitted
-        )
+        ;; Validate's if the recipient is a contract principal and not a just principal
+        (asserts! (is-some contract-name) UNAUTHORIZED_POT)
+        ;; Validate's if the tx-sender is not the platform treasury
+        (asserts! (not (is-eq tx-sender platform-treasury)) err-owner-not-permitted)
+        ;; Validate's if the platform treasury is not the recipient
+        (asserts! (not (is-eq platform-treasury recipient)) err-owner-not-permitted)
 
-        ;; Transfer fee to platform
-        (try! (stx-transfer-memo? platform-contracts-fee recipient platform-treasury
-            (unwrap! (to-consensus-buff? "new pot") NOT_FOUND)
-        ))
+        ;; ;; Transfer fee to platform
+        (try! (stx-transfer-memo? platform-contracts-fee tx-sender platform-treasury (unwrap! (to-consensus-buff? "new pot") NOT_FOUND)))
 
         (try! (nft-mint? stackpot-pot token-id recipient))
-        (map-insert token-owner-ids recipient token-id)
-        (var-set last-token-id token-id)
+        (map-insert pot-contract-with-index recipient token-id)
+        (map-insert pot-id-info token-id {pot-id: token-id, pot-name: (unwrap! contract-name NOT_FOUND), pot-owner: recipient, pot-contract: recipient})
+        (var-set last-pot-index token-id)
+
+        ;; Print event
+        (print {
+            event: "pot minted",
+            contract-name: contract-name,
+            token-id: token-id,
+            recipient: recipient,
+            tx-sender: tx-sender,
+            platform-contracts-fee: platform-contracts-fee,
+        })
+
         (ok token-id)
+    )
+)
+
+
+(define-read-only (get-pot-info (owner principal))
+    (let (
+            (pot-index (unwrap! (unwrap! (get-token-id owner) NOT_FOUND) NOT_FOUND))
+            (pot-info (unwrap! (map-get? pot-id-info pot-index) NOT_FOUND))
+        )
+        (ok pot-info)
+    )
+)
+
+(update-fee u100000)
+
+(define-public (claiming-pot-reward-return-principals (pot-id uint) (contract <stackpot-pot-trait>))
+    (let 
+        (
+            (pot-detailes (unwrap! (get-pot-info (contract-of contract)) NOT_FOUND))
+        )
+        (try! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspot-distribute-rewards dispatch-principals-and-rewards pot-id contract pot-detailes))
+        (ok true)
     )
 )
