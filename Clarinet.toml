@@ -11,47 +11,47 @@ contract_id = 'SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9.nft-trait'
 [contracts.sim-pox]
 path = 'contracts/sim-pox.clar'
 clarity_version = 3
-epoch = 3.1
+epoch = "latest"
 
 [contracts.stackpot]
 path = 'contracts/stackpot.clar'
 clarity_version = 3
-epoch = 3.1
+epoch = "latest"
 
 [contracts.stackpot-pot-participants]
 path = 'contracts/stackpot-pot-participants.clar'
 clarity_version = 3
-epoch = 3.1
+epoch = "latest"
 
 [contracts.stackpot-pot-trait]
 path = 'contracts/stackpot-pot-trait.clar'
 clarity_version = 3
-epoch = 3.1
+epoch = "latest"
 
 [contracts.stackpot-pot-winners]
 path = 'contracts/stackpot-pot-winners.clar'
 clarity_version = 3
-epoch = 3.1
+epoch = "latest"
 
 [contracts.stackpot-pots]
 path = 'contracts/stackpot-pots.clar'
 clarity_version = 3
-epoch = 3.1
+epoch = "latest"
 
 [contracts.stackpot-vrf]
 path = 'contracts/stackpot-vrf.clar'
 clarity_version = 3
-epoch = 3.1
+epoch = "latest"
 
 [contracts.stackspot-distribute-rewards]
 path = 'contracts/stackspot-distribute-rewards.clar'
 clarity_version = 3
-epoch = 3.1
+epoch = "latest"
 
 [contracts.stackspot-distribution-trait]
 path = 'contracts/stackspot-distribution-trait.clar'
 clarity_version = 3
-epoch = 3.1
+epoch = "latest"
 [repl.analysis]
 passes = []
 
