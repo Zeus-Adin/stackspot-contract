@@ -45,16 +45,19 @@ genesis:
       balance: "100000000000000"
       sbtc-balance: "1000000000"
   contracts:
+    - genesis
+    - lockup
+    - bns
+    - cost-voting
     - costs
     - pox
+    - costs-2
     - pox-2
+    - costs-3
     - pox-3
     - pox-4
-    - lockup
-    - costs-2
-    - costs-3
-    - cost-voting
-    - bns
+    - signers
+    - signers-voting
 plan:
   batches:
     - id: 0
@@ -64,7 +67,7 @@ plan:
             emulated-sender: SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9
             path: "./.cache/requirements/SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9.nft-trait.clar"
             clarity-version: 1
-      epoch: "2.0"
+      epoch: "2.1"
     - id: 1
       transactions:
         - emulated-contract-publish:
@@ -106,13 +109,15 @@ plan:
             contract-name: stackpot-vrf
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/stackpot-vrf.clar
-            clarity-version: 3       
-      epoch: "3.1"
-    - id: 2
-      transactions:
+            clarity-version: 3
         - emulated-contract-publish:
             contract-name: stackpot
-            emulated-sender: ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/stackpot.clar
             clarity-version: 3
-      epoch: "3.1"
+        - emulated-contract-publish:
+            contract-name: stackpot_test
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: tests/clarunit/stackpot_test.clar
+            clarity-version: 3
+      epoch: "3.2"

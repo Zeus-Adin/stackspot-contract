@@ -357,10 +357,10 @@
 (define-private (add-pox-addr-to-ith-reward-cycle
     (cycle-index uint)
     (params {
-      pox-addr:     {
-      version: (buff 1),
-      hashbytes: (buff 20),
-    },
+      pox-addr: {
+        version: (buff 1),
+        hashbytes: (buff 20),
+      },
       first-reward-cycle: uint,
       num-cycles: uint,
       amount-ustx: uint,
