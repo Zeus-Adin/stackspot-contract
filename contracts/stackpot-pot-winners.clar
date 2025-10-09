@@ -1,7 +1,7 @@
 (define-public (log-winner (winner-values {
     ;; Pot Values
     pot-id: uint,
-    pot-owner: principal,
+    pot-admin: principal,
     pot-round: uint,
     pot-participants: uint,
     pot-value: uint,
@@ -11,6 +11,14 @@
     pot-fee: uint,
     pot-min-amount: uint,
     pot-max-participants: uint,
+    
+    ;; Pot Starter Values
+    pot-starter-address: principal,
+    pot-starter-amount: uint,
+    ;; Claimer Values
+    claimer-address: principal,
+    claimer-amount: uint,
+    
     ;; Winner Values
     winner-id: uint,
     winner-address: principal,

@@ -13,8 +13,8 @@ path = 'contracts/sim-pox.clar'
 clarity_version = 3
 epoch = 3.1
 
-[contracts.stackpot]
-path = 'contracts/stackpot.clar'
+[contracts.jackpot]
+path = 'contracts/jackpot.clar'
 clarity_version = 3
 epoch = 3.1
 
@@ -43,8 +43,8 @@ path = 'contracts/stackpot-vrf.clar'
 clarity_version = 3
 epoch = 3.1
 
-[contracts.stackspot-distribute-rewards]
-path = 'contracts/stackspot-distribute-rewards.clar'
+[contracts.stackspot-distribute]
+path = 'contracts/stackspot-distribute.clar'
 clarity_version = 3
 epoch = 3.1
 
