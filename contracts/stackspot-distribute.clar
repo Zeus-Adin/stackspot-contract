@@ -123,11 +123,10 @@
     )
 )
 
-(define-public (delegate-treasury (contract <stackpot-pot-trait>)) 
+(define-public (delegate-treasury (contract <stackpot-pot-trait>) (delegate-to principal)) 
     (let (
             (treasury-address (unwrap! (contract-call? contract get-pot-treasury) ERR_NOT_FOUND))
-            (amount-ustx (stx-get-balance treasury-address))
-            (delegate-to treasury-address)
+            (amount-ustx (stx-get-balance treasury-address))            
             (until-burn-ht none)
             (pox-addr none)
         )

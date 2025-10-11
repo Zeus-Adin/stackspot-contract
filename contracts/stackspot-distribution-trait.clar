@@ -3,5 +3,6 @@
     (
         (dispatch-principals (<stackpot-pot-trait>) (response bool uint))
         (dispatch-rewards ({participant: principal, amount: uint} <stackpot-pot-trait>) (response bool uint))
+        (delegate-treasury (<stackpot-pot-trait> principal) (response bool uint))
     )
 )

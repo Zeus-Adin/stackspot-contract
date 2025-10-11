@@ -247,4 +247,17 @@
     )
 )
 
+(define-public (delegate-treasury (contract <stackpot-pot-trait>) (delegate-to principal))
+    (let 
+        (
+            (pot-detailes (unwrap! (get-pot-info (contract-of contract)) ERR_NOT_FOUND))  
+            (pot-contract (get pot-contract pot-detailes))
+        )
+        (asserts! (is-eq pot-contract (contract-of contract)) ERR_UNAUTHORIZED)
+        (asserts! (is-eq contract-caller (contract-of contract)) ERR_UNAUTHORIZED)
+        (try! (contract-call? .stackspot-distribute delegate-treasury contract delegate-to))
+        (ok true)
+    )
+)
+
 (update-fee u100000)
