@@ -1,5 +1,5 @@
 (impl-trait 'SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9.nft-trait.nft-trait)
-(use-trait stackpot-pot-trait .stackpot-pot-trait.stackpot-pot-trait)
+(use-trait stackspot-trait .stackspot-trait.stackspot-trait)
 
 ;; Platform address
 (define-constant platform-treasury tx-sender)
@@ -61,12 +61,15 @@
         (try! (mint contract-address))
 
         ;; Log pot registered
-        (try! (log-participant {
+        (try! (log-pot {
             pot-id: (var-get last-pot-index),
-            participant-id: u0,
-            participant-address: contract-address,
-            participant-amount: new-pot-owner-balance,
-            participant-timestamp: stacks-block-height,
+            pot-address: contract-address,
+            pot-owner: owner,
+            pot-name: contract-name,
+            pot-version: contract-version,
+            pot-hash-bytes: contract-hash-bytes,
+            pot-registry-timestamp: stacks-block-height,
+            pot-platform-contract-fee: platform-contracts-fee
         }))
 
         ;; Print event
@@ -124,23 +127,26 @@
             (pot-address (unwrap! (nft-get-owner? stackpot-pot pot-id) ERR_NOT_FOUND))
         )
         (asserts! (is-eq pot-address contract-caller) err-not-permitted)
-        (ok (contract-call? .stackpot-pot-winners log-winner winner-values))
+        (ok (contract-call? .stackspot-winners log-winner winner-values))
     )
 )
 
-(define-public (log-participant (participant-values {
+(define-public (log-pot (pot-values {
     pot-id: uint,
-    participant-id: uint,
-    participant-address: principal,
-    participant-amount: uint,
-    participant-timestamp: uint,
+    pot-address: principal,
+    pot-owner: principal,
+    pot-name: (optional (string-ascii 255)),
+    pot-version: (buff 1),
+    pot-hash-bytes: (buff 20),
+    pot-platform-contract-fee: uint,
+    pot-registry-timestamp: uint
 }))
     (let (
-            (pot-id (get pot-id participant-values))
+            (pot-id (get pot-id pot-values))
             (pot-address (unwrap! (nft-get-owner? stackpot-pot pot-id) ERR_NOT_FOUND))
         )
         (asserts! (is-eq pot-address contract-caller) err-not-permitted)
-        (is-ok (contract-call? .stackpot-pot-participants log-participant participant-values))
+        (is-ok (contract-call? .stackspot-registry log-pot pot-values))
         (ok true)
     )
 )
@@ -221,7 +227,7 @@
     )
 )
 
-(define-public (dispatch-principals (contract <stackpot-pot-trait>))
+(define-public (dispatch-principals (contract <stackspot-trait>))
     (let 
         (
             (pot-detailes (unwrap! (get-pot-info (contract-of contract)) ERR_NOT_FOUND))
@@ -234,7 +240,7 @@
     )
 )
 
-(define-public (dispatch-rewards (winner-values {participant: principal, amount: uint}) (contract <stackpot-pot-trait>))
+(define-public (dispatch-rewards (winner-values {participant: principal, amount: uint}) (contract <stackspot-trait>))
     (let 
         (
             (pot-detailes (unwrap! (get-pot-info (contract-of contract)) ERR_NOT_FOUND))  
@@ -247,7 +253,7 @@
     )
 )
 
-(define-public (delegate-treasury (contract <stackpot-pot-trait>) (delegate-to principal))
+(define-public (delegate-treasury (contract <stackspot-trait>) (delegate-to principal))
     (let 
         (
             (pot-detailes (unwrap! (get-pot-info (contract-of contract)) ERR_NOT_FOUND))  
@@ -256,6 +262,22 @@
         (asserts! (is-eq pot-contract (contract-of contract)) ERR_UNAUTHORIZED)
         (asserts! (is-eq contract-caller (contract-of contract)) ERR_UNAUTHORIZED)
         (try! (contract-call? .stackspot-distribute delegate-treasury contract delegate-to))
+        (ok true)
+    )
+)
+
+(define-public (withdraw-from-pot (participant-index uint) (contract <stackspot-trait>))
+    (let 
+        (
+            (participants-values (unwrap! (contract-call? contract get-by-id-helper participant-index) ERR_NOT_FOUND))
+            (participant (unwrap! (get participant participants-values) ERR_NOT_FOUND))
+            (amount (unwrap! (get amount participants-values) ERR_NOT_FOUND))
+        )
+        ;; Validate's if the participant is the same as the tx-sender
+        (asserts! (is-eq participant tx-sender) ERR_UNAUTHORIZED)
+        (asserts! (is-eq contract-caller (contract-of contract)) ERR_UNAUTHORIZED)
+
+        (try! (contract-call? .stackspot-distribute withdraw-from-pot participant amount contract))
         (ok true)
     )
 )

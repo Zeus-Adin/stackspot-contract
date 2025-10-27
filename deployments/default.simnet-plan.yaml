@@ -73,19 +73,19 @@ plan:
             path: contracts/sim-pox.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: stackpot-pot-trait
+            contract-name: stackspot-trait
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/stackpot-pot-trait.clar
+            path: contracts/stackspot-trait.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: stackpot-pot-participants
+            contract-name: stackspot-registry
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/stackpot-pot-participants.clar
+            path: contracts/stackspot-registry.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: stackpot-pot-winners
+            contract-name: stackspot-winners
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/stackpot-pot-winners.clar
+            path: contracts/stackspot-winners.clar
             clarity-version: 3
         - emulated-contract-publish:
             contract-name: stackspot-distribution-trait
@@ -98,21 +98,21 @@ plan:
             path: contracts/stackspot-distribute.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: stackpot-pots
+            contract-name: stackspots
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/stackpot-pots.clar
+            path: contracts/stackspots.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: stackpot-vrf
+            contract-name: stackspot-vrf
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/stackpot-vrf.clar
+            path: contracts/stackspot-vrf.clar
             clarity-version: 3        
       epoch: "3.1"
     - id: 2
       transactions:
         - emulated-contract-publish:
-            contract-name: jackpot
+            contract-name: stackspot-jackpot
             emulated-sender: ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5
-            path: contracts/jackpot.clar
+            path: contracts/stackspot-jackpot.clar
             clarity-version: 3
       epoch: "3.1"

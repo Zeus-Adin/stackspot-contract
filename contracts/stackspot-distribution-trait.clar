@@ -1,8 +1,8 @@
-(use-trait stackpot-pot-trait 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackpot-pot-trait.stackpot-pot-trait)
+(use-trait stackspot-trait 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspot-trait.stackspot-trait)
 (define-trait stackspot-distribution-trait 
     (
-        (dispatch-principals (<stackpot-pot-trait>) (response bool uint))
-        (dispatch-rewards ({participant: principal, amount: uint} <stackpot-pot-trait>) (response bool uint))
-        (delegate-treasury (<stackpot-pot-trait> principal) (response bool uint))
+        (dispatch-principals (<stackspot-trait>) (response bool uint))
+        (dispatch-rewards ({participant: principal, amount: uint} <stackspot-trait>) (response bool uint))
+        (delegate-treasury (<stackspot-trait> principal) (response bool uint))
     )
 )

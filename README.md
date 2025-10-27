@@ -13,15 +13,15 @@ The project consists of 7 interconnected smart contracts that work together to c
 ### Core Contracts
 
 1. **`stackpot.clar`** - Main lottery contract
-2. **`stackpot-pots.clar`** - NFT-based pot registry
-3. **`stackpot-vrf.clar`** - Verifiable Random Function implementation
+2. **`stackspots.clar`** - NFT-based pot registry
+3. **`stackspot-vrf.clar`** - Verifiable Random Function implementation
 4. **`sim-pox.clar`** - Simplified Proof of Transfer (PoX) simulation
 
 ### Supporting Contracts
 
-5. **`stackpot-pot-participants.clar`** - Participant logging
-6. **`stackpot-pot-winners.clar`** - Winner logging
-7. **`stackpot-pot-trait.clar`** - Interface trait definition
+5. **`stackspot-registry.clar`** - Participant logging
+6. **`stackspot-winners.clar`** - Winner logging
+7. **`stackspot-trait.clar`** - Interface trait definition
 
 ## 📋 Contract Details
 
@@ -47,7 +47,7 @@ The heart of the StackSpot system, this contract manages the entire lottery life
 - `delegate-to-pot(amount, participant)` - Internal function handling participant registration
 
 **Pot Operations:**
-- `start-jackpot()` - Initialize a new pot round
+- `start-stackspot-jackpot()` - Initialize a new pot round
 - `reward-pot-winner()` - Select winner and distribute rewards
 - `get-pot-participants()` - Retrieve list of all participants
 - `get-pot-value()` - Get current total pot value
@@ -67,7 +67,7 @@ The heart of the StackSpot system, this contract manages the entire lottery life
 - **Balance Validation**: Verifies sufficient STX balance before participation
 - **Authorization Checks**: Only pot owner can modify configurations
 
-### 2. `stackpot-pots.clar` - NFT Pot Registry
+### 2. `stackspots.clar` - NFT Pot Registry
 
 Manages pot ownership and registration through NFT tokens, providing a unique identifier for each pot.
 
@@ -97,7 +97,7 @@ Manages pot ownership and registration through NFT tokens, providing a unique id
 - **Platform Fee**: Required STX payment for pot creation
 - **Treasury Management**: Automatic fee collection to platform treasury
 
-### 3. `stackpot-vrf.clar` - Verifiable Random Function
+### 3. `stackspot-vrf.clar` - Verifiable Random Function
 
 Implements cryptographically secure random number generation using blockchain data.
 
@@ -152,7 +152,7 @@ A simplified implementation of Stacks' Proof of Transfer (PoX) mechanism for tes
 - **Stacking Thresholds**: Dynamic based on liquid supply
 - **Rejection Fraction**: 25% threshold for PoX rejection
 
-### 5. `stackpot-pot-participants.clar` - Participant Logging
+### 5. `stackspot-registry.clar` - Participant Logging
 
 Simple contract for logging participant information and activities.
 
@@ -164,7 +164,7 @@ Simple contract for logging participant information and activities.
   - Contribution amount
   - Timestamp
 
-### 6. `stackpot-pot-winners.clar` - Winner Logging
+### 6. `stackspot-winners.clar` - Winner Logging
 
 Handles logging of winner information and pot results.
 
@@ -176,7 +176,7 @@ Handles logging of winner information and pot results.
   - Block timestamps
   - Round statistics
 
-### 7. `stackpot-pot-trait.clar` - Interface Definition
+### 7. `stackspot-trait.clar` - Interface Definition
 
 Defines the standard interface that all pot contracts must implement.
 
@@ -190,7 +190,7 @@ Defines the standard interface that all pot contracts must implement.
 ## 🔄 System Workflow
 
 ### 1. Pot Creation
-1. User calls `register-pot()` in `stackpot-pots.clar`
+1. User calls `register-pot()` in `stackspots.clar`
 2. Platform fee is collected
 3. NFT is minted to represent pot ownership
 4. Pot is registered in the system
@@ -234,13 +234,13 @@ Defines the standard interface that all pot contracts must implement.
 
 The project includes comprehensive test suites for all contracts:
 
-- **`jackpot.test.ts`** - Main lottery functionality tests
+- **`stackspot-jackpot.test.ts`** - Main lottery functionality tests
 - **`sim-pox.test.ts`** - PoX simulation tests
-- **`stackpot-pot-participants.test.ts`** - Participant logging tests
-- **`stackpot-pot-trait.test.ts`** - Interface compliance tests
-- **`stackpot-pot-winners.test.ts`** - Winner logging tests
-- **`stackpot-pots.test.ts`** - Pot registry tests
-- **`stackpot-vrf.test.ts`** - Random function tests
+- **`stackspot-registry.test.ts`** - Participant logging tests
+- **`stackspot-trait.test.ts`** - Interface compliance tests
+- **`stackspot-winners.test.ts`** - Winner logging tests
+- **`stackspots.test.ts`** - Pot registry tests
+- **`stackspot-vrf.test.ts`** - Random function tests
 
 ### Running Tests
 ```bash
@@ -288,9 +288,9 @@ All parameters can be modified through the configuration system, allowing for fl
 ## 🔗 Contract Dependencies
 
 The contracts are designed to work together seamlessly:
-- `stackpot.clar` depends on `stackpot-pots.clar`, `stackpot-vrf.clar`
-- `stackpot-pots.clar` depends on `stackpot-pot-participants.clar`, `stackpot-pot-winners.clar`
-- All pot contracts implement `stackpot-pot-trait.clar` interface
+- `stackpot.clar` depends on `stackspots.clar`, `stackspot-vrf.clar`
+- `stackspots.clar` depends on `stackspot-registry.clar`, `stackspot-winners.clar`
+- All pot contracts implement `stackspot-trait.clar` interface
 
 ## 📝 License
 

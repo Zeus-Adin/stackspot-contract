@@ -13,33 +13,33 @@ path = 'contracts/sim-pox.clar'
 clarity_version = 3
 epoch = 3.1
 
-[contracts.jackpot]
-path = 'contracts/jackpot.clar'
+[contracts.stackspot-jackpot]
+path = 'contracts/stackspot-jackpot.clar'
 clarity_version = 3
 epoch = 3.1
 
-[contracts.stackpot-pot-participants]
-path = 'contracts/stackpot-pot-participants.clar'
+[contracts.stackspot-registry]
+path = 'contracts/stackspot-registry.clar'
 clarity_version = 3
 epoch = 3.1
 
-[contracts.stackpot-pot-trait]
-path = 'contracts/stackpot-pot-trait.clar'
+[contracts.stackspot-trait]
+path = 'contracts/stackspot-trait.clar'
 clarity_version = 3
 epoch = 3.1
 
-[contracts.stackpot-pot-winners]
-path = 'contracts/stackpot-pot-winners.clar'
+[contracts.stackspot-winners]
+path = 'contracts/stackspot-winners.clar'
 clarity_version = 3
 epoch = 3.1
 
-[contracts.stackpot-pots]
-path = 'contracts/stackpot-pots.clar'
+[contracts.stackspots]
+path = 'contracts/stackspots.clar'
 clarity_version = 3
 epoch = 3.1
 
-[contracts.stackpot-vrf]
-path = 'contracts/stackpot-vrf.clar'
+[contracts.stackspot-vrf]
+path = 'contracts/stackspot-vrf.clar'
 clarity_version = 3
 epoch = 3.1
 

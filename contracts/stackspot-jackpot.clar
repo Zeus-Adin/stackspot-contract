@@ -1,5 +1,5 @@
-;; (impl-trait 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackpot-pot-trait.stackpot-pot-trait)
-(use-trait stackpot-pot-trait 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackpot-pot-trait.stackpot-pot-trait)
+;; (impl-trait 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspot-trait.stackspot-trait)
+(use-trait stackspot-trait 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspot-trait.stackspot-trait)
 
 ;; --- Not Found
 (define-constant ERR_NOT_FOUND (err u1001))
@@ -174,7 +174,7 @@
 )
 ;; Get Pot ID
 (define-read-only (get-pot-id)
-    (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackpot-pots get-token-id pot-treasury-address)
+    (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots get-token-id pot-treasury-address)
 )
 
 ;; Get Pot Starter Principal
@@ -265,8 +265,18 @@
     )
 )
 
+;; Public Function that withdraws the participant's amount from the pot
+(define-public (withdraw-from-pot (pot-contract <stackspot-trait>))
+    (let ((participant-index (unwrap! (map-get? pot-participants-by-principal tx-sender) ERR_NOT_FOUND))) 
+        (asserts! (not (var-get locked)) ERR_POT_ALREADY_STARTED)
+
+        (try! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots withdraw-from-pot participant-index pot-contract))
+        (ok true)
+    )
+)
+
 ;; Public Function That Starts The Jackpot
-(define-public (start-jackpot (pot-contract <stackpot-pot-trait>))
+(define-public (start-stackspot-jackpot (pot-contract <stackspot-trait>))
     (let
         ((pot-treasury (get-pot-treasury)))
 
@@ -280,7 +290,7 @@
         (asserts! (is-eq pot-treasury (contract-of pot-contract)) ERR_UNAUTHORIZED)
 
         ;; Delegate treasury to pot contract
-        (try! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackpot-pots delegate-treasury pot-contract (contract-of pot-contract)))
+        (try! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots delegate-treasury pot-contract (contract-of pot-contract)))
 
         ;; Set pot starter principal
         (var-set pot-starter-principal (some tx-sender))
@@ -290,7 +300,7 @@
 
         ;; Print
         (print {
-            event: "start-jackpot",
+            event: "start-stackspot-jackpot",
             pot-starter-principal: tx-sender,
             port-claim-principal: (var-get pot-claimer-principal),
             pot-contract: (contract-of pot-contract),
@@ -306,11 +316,11 @@
 )
 
 ;; Public function that rewards the pot winner, returns participants principals and rewards pot starter and claimer
-(define-public (claim-pot-reward (pot-contract <stackpot-pot-trait>))
+(define-public (claim-pot-reward (pot-contract <stackspot-trait>))
     (let 
         (
             ;; Get pot ID
-            (pot-id (unwrap! (unwrap! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackpot-pots get-token-id pot-treasury-address) ERR_NOT_FOUND) ERR_NOT_FOUND))
+            (pot-id (unwrap! (unwrap! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots get-token-id pot-treasury-address) ERR_NOT_FOUND) ERR_NOT_FOUND))
             ;; Get 
             ;; @value: pot winner's ID
             ;; @value: pot winner's values
@@ -344,13 +354,13 @@
         (asserts! (validate-can-claim-pot) ERR_POT_CLAIM_NOT_REACHED)
 
         ;; Returns participants principals
-        (try! (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackpot-pots dispatch-principals pot-contract)))       
+        (try! (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots dispatch-principals pot-contract)))       
 
         ;; Pay winner
-        (try! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackpot-pots dispatch-rewards winner-values pot-contract))
+        (try! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots dispatch-rewards winner-values pot-contract))
 
         ;; Log winner
-        (is-ok (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackpot-pots log-winner {
+        (is-ok (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots log-winner {
             ;; Pot Values
             pot-id: pot-id,
             pot-admin: (var-get pot-admin),
@@ -427,7 +437,7 @@
 (map-insert config "max-participants" u100)
 
 ;; Register pot
-(contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackpot-pots register-pot {owner: tx-sender, contract: (as-contract tx-sender)})
+(contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots register-pot {owner: tx-sender, contract: (as-contract tx-sender)})
 
 ;; Get random digit from VRF and return the winner index
 (define-private (get-random-index (participant-count uint))
@@ -438,8 +448,8 @@
             (pot-admin-buff (unwrap! (to-consensus-buff? (var-get pot-admin)) ERR_NOT_FOUND))
             (merged-buff (concat sender-buff pot-admin-buff))
             (merged-sha256 (sha256 merged-buff))
-            (merged-sha256-uint (buff-to-uint-le (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackpot-vrf lower-16-le merged-sha256)))
-            (vrf-random-digit (unwrap! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackpot-vrf get-random-uint-at-block stacks-block-height ) ERR_NOT_FOUND))
+            (merged-sha256-uint (buff-to-uint-le (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspot-vrf lower-16-le merged-sha256)))
+            (vrf-random-digit (unwrap! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspot-vrf get-random-uint-at-block stacks-block-height ) ERR_NOT_FOUND))
         )
         (print {
             vrf-random-digit: vrf-random-digit,

@@ -1,5 +1,5 @@
 (impl-trait 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspot-distribution-trait.stackspot-distribution-trait)
-(use-trait stackpot-pot-trait 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackpot-pot-trait.stackpot-pot-trait)
+(use-trait stackspot-trait 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspot-trait.stackspot-trait)
 
 ;; --- Not Found
 (define-constant ERR_NOT_FOUND (err u1001))
@@ -8,6 +8,7 @@
 
 ;; --- Distribution Admin
 (define-constant pot-distribution-admin (as-contract tx-sender))
+(define-constant allowed-caller .stackspots)
 
 ;; Private helper function that returns participant principals
 (define-private (return-participant-principals (participant-value (optional {participant: principal, amount: uint})) (result (response bool uint)))
@@ -23,7 +24,7 @@
     )
 )
 
-(define-public (dispatch-principals (contract <stackpot-pot-trait>))
+(define-public (dispatch-principals (contract <stackspot-trait>))
     (let 
         (
             (pot-id (unwrap! (contract-call? contract get-pot-id) ERR_NOT_FOUND))
@@ -32,6 +33,8 @@
         )
         ;; Validate's if the pot treasury is the same as the pot treasury address
         (asserts! (is-eq pot-treasury tx-sender) ERR_UNAUTHORIZED)
+        ;; Validate's if the contract caller is the allowed caller
+        (asserts! (is-eq contract-caller allowed-caller) ERR_UNAUTHORIZED)
 
         ;; ;; Dispatch participants principals
         (try! (fold return-participant-principals participants (ok true)))
@@ -51,7 +54,7 @@
     )
 )
 
-(define-public (dispatch-rewards (winner-values {participant: principal, amount: uint}) (contract <stackpot-pot-trait>))
+(define-public (dispatch-rewards (winner-values {participant: principal, amount: uint}) (contract <stackspot-trait>))
     (let 
         (
             (pot-treasury (unwrap! (contract-call? contract get-pot-treasury) ERR_NOT_FOUND))
@@ -75,6 +78,8 @@
         )
         ;; Validate's if the pot treasury is the same as the pot treasury address
         (asserts! (is-eq pot-treasury tx-sender) ERR_UNAUTHORIZED)
+        ;; Validate's if the contract caller is the allowed caller
+        (asserts! (is-eq contract-caller allowed-caller) ERR_UNAUTHORIZED)
 
         ;; Dispatch pot starter reward
         (if (> pot-starter-reward u0)
@@ -123,16 +128,37 @@
     )
 )
 
-(define-public (delegate-treasury (contract <stackpot-pot-trait>) (delegate-to principal)) 
+(define-public (delegate-treasury (contract <stackspot-trait>) (delegate-to principal)) 
     (let (
             (treasury-address (unwrap! (contract-call? contract get-pot-treasury) ERR_NOT_FOUND))
             (amount-ustx (stx-get-balance treasury-address))            
             (until-burn-ht none)
             (pox-addr none)
         )
+        ;; Validate's if the pot treasury is the same as the pot treasury address
+        (asserts! (is-eq treasury-address tx-sender) ERR_UNAUTHORIZED)
+        ;; Validate's if the contract caller is the allowed caller
+        (asserts! (is-eq contract-caller allowed-caller) ERR_UNAUTHORIZED)
+
         (match (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sim-pox delegate-stx amount-ustx delegate-to until-burn-ht pox-addr)
             ok (ok true)
             err (err (to-uint err))
         )
+    )
+)
+
+(define-public (withdraw-from-pot (participant principal) (amount uint) (contract <stackspot-trait>))
+    (let 
+        (
+            (treasury-address (unwrap! (contract-call? contract get-pot-treasury) ERR_NOT_FOUND))
+            (treasury-balance (stx-get-balance treasury-address))
+        )
+        ;; Validate's if the pot treasury is the same as the pot treasury address
+        ;; Validate's if the contract caller is the allowed caller
+        (asserts! (is-eq treasury-address tx-sender) ERR_UNAUTHORIZED)
+        (asserts! (is-eq contract-caller allowed-caller) ERR_UNAUTHORIZED)
+
+        (try! (stx-transfer-memo? amount treasury-address participant (unwrap! (to-consensus-buff? "withdraw from pot") ERR_NOT_FOUND)))
+        (ok true)
     )
 )

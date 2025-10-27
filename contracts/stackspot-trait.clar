@@ -1,4 +1,4 @@
-(define-trait stackpot-pot-trait 
+(define-trait stackspot-trait 
     (
         ;; (join-pot (uint) (response bool uint))
         ;; (reward-pot-winner () (response bool uint))
