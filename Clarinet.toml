@@ -52,13 +52,6 @@ epoch = "latest"
 path = 'contracts/stackspot-distribution-trait.clar'
 clarity_version = 3
 epoch = "latest"
-
-### tests
-[contracts.stackpot_test]
-path = 'tests/clarunit/stackpot_test.clar'
-clarity_version = 3
-epoch = "latest"
-
 [repl.analysis]
 passes = []
 
