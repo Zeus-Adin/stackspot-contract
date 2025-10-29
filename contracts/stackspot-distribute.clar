@@ -192,19 +192,9 @@
         ;; ;; Validate's if the contract caller is the allowed caller
         (asserts! (is-eq contract-caller allowed-caller) ERR_UNAUTHORIZED)
 
-        ;; (match (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sim-pox delegate-stx amount-ustx delegate-to until-burn-ht pox-addr)
-        ;;     ok (ok true)
-        ;;     error (err (to-uint error))
-        ;; )
-        (print {
-            treasury-address: treasury-address,
-            amount-ustx: amount-ustx,
-            until-burn-ht: until-burn-ht,
-            pox-addr: pox-addr,
-            contract: contract,
-            contract-caller: contract-caller,
-            tx-sender: tx-sender,
-        })
-        (ok true)
+        (match (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sim-pox delegate-stx amount-ustx delegate-to until-burn-ht pox-addr)
+            ok (ok true)
+            error (err (to-uint error))
+        )        
     )
 )
