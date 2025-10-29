@@ -30,7 +30,6 @@ The project consists of 7 interconnected smart contracts that work together to c
 The heart of the StackSpot system, this contract manages the entire lottery lifecycle.
 
 #### Key Features:
-
 - **Pot Management**: Handles participant registration, pot locking, and winner selection
 - **Configuration System**: Flexible settings for pot parameters
 - **Random Selection**: Integrates with VRF for fair winner selection
@@ -39,36 +38,30 @@ The heart of the StackSpot system, this contract manages the entire lottery life
 #### Core Functions:
 
 **Configuration Management:**
-
 - `set-config(config-key, value)` - Update pot configuration (max participants, fees, etc.)
 - `set-pot-fee(new-fee)` - Set the platform fee for pot creation
 - `get-configs()` - Retrieve current configuration settings
 
 **Participation:**
-
 - `join-pot(amount, participant)` - Allow users to join a pot with a specified amount
 - `delegate-to-pot(amount, participant)` - Internal function handling participant registration
 
 **Pot Operations:**
-
 - `start-jackpot()` - Initialize a new pot round
 - `reward-pot-winner()` - Select winner and distribute rewards
 - `get-pot-participants()` - Retrieve list of all participants
 - `get-pot-value()` - Get current total pot value
 
 **Random Selection:**
-
 - `get-random-digit(participant-count)` - Generate random winner index using VRF
 
 #### Configuration Parameters:
-
 - **Max Participants**: Up to 100 participants per pot
 - **Min Amount**: Minimum contribution required (default: 100 microSTX)
 - **Pot Fee**: Platform fee for pot creation (default: 100,000 microSTX)
 - **Reward Token**: Token type for rewards (default: "sbtc")
 
 #### Security Features:
-
 - **Locking Mechanism**: Prevents new participants during pot execution
 - **Duplicate Prevention**: Ensures one participation per address
 - **Balance Validation**: Verifies sufficient STX balance before participation
@@ -79,7 +72,6 @@ The heart of the StackSpot system, this contract manages the entire lottery life
 Manages pot ownership and registration through NFT tokens, providing a unique identifier for each pot.
 
 #### Key Features:
-
 - **NFT Minting**: Each pot gets a unique NFT token
 - **Ownership Tracking**: Maps pot owners to their NFT tokens
 - **Fee Management**: Handles platform fees for pot creation
@@ -88,24 +80,20 @@ Manages pot ownership and registration through NFT tokens, providing a unique id
 #### Core Functions:
 
 **Pot Registration:**
-
 - `register-pot(pot-values)` - Register a new pot and mint NFT
 - `mint(recipient)` - Mint NFT for pot owner
 - `get-owner-token-id(owner)` - Get NFT ID for pot owner
 
 **NFT Management:**
-
 - `transfer(token-id, sender, recipient)` - Transfer pot ownership
 - `get-owner(token-id)` - Get current owner of pot NFT
 - `get-token-uri(token-id)` - Get metadata URI (returns none)
 
 **Event Logging:**
-
 - `log-winner(winner-values)` - Log winner information
 - `log-participant(participant-values)` - Log participant information
 
 #### Fee Structure:
-
 - **Platform Fee**: Required STX payment for pot creation
 - **Treasury Management**: Automatic fee collection to platform treasury
 
@@ -114,7 +102,6 @@ Manages pot ownership and registration through NFT tokens, providing a unique id
 Implements cryptographically secure random number generation using blockchain data.
 
 #### Key Features:
-
 - **Blockchain-Based Randomness**: Uses burn block headers for entropy
 - **Verifiable Results**: Anyone can verify the randomness source
 - **Deterministic Output**: Same inputs always produce same results
@@ -123,17 +110,14 @@ Implements cryptographically secure random number generation using blockchain da
 #### Core Functions:
 
 **Random Generation:**
-
 - `get-random-uint-at-block(blockHeight)` - Generate random number from specific block
 - `lower-16-le(input)` - Extract lower 16 bytes in little-endian format
 
 **Utility Functions:**
-
 - `buff-to-u8(byte)` - Convert buffer to uint8
 - `add-and-shift-uint-le(idx, input)` - Helper for buffer-to-uint conversion
 
 #### Randomness Process:
-
 1. **Block Hash**: Uses burn block header hash as entropy source
 2. **Sender Hash**: Incorporates transaction sender for additional randomness
 3. **Merging**: Combines block hash and sender hash
@@ -145,7 +129,6 @@ Implements cryptographically secure random number generation using blockchain da
 A simplified implementation of Stacks' Proof of Transfer (PoX) mechanism for testing and simulation purposes.
 
 #### Key Features:
-
 - **Stacking Simulation**: Mimics STX stacking behavior
 - **Reward Cycles**: Manages reward cycle calculations
 - **Delegation Support**: Handles stacking delegation
@@ -154,19 +137,16 @@ A simplified implementation of Stacks' Proof of Transfer (PoX) mechanism for tes
 #### Core Functions:
 
 **Stacking Operations:**
-
 - `stack-stx(amount-ustx, pox-addr, start-burn-ht, lock-period)` - Lock STX for stacking
 - `delegate-stx(amount-ustx, delegate-to, until-burn-ht, pox-addr)` - Delegate stacking rights
 - `reject-pox()` - Vote to reject PoX for a cycle
 
 **Information Retrieval:**
-
 - `get-pox-info()` - Get current PoX parameters
 - `get-stacker-info(stacker)` - Get stacker's current status
 - `can-stack-stx(pox-addr, amount-ustx, first-reward-cycle, num-cycles)` - Check stacking eligibility
 
 #### Configuration:
-
 - **Min Lock Period**: 1 reward cycle
 - **Max Lock Period**: 12 reward cycles
 - **Stacking Thresholds**: Dynamic based on liquid supply
@@ -177,7 +157,6 @@ A simplified implementation of Stacks' Proof of Transfer (PoX) mechanism for tes
 Simple contract for logging participant information and activities.
 
 #### Core Functions:
-
 - `log-participant(participant-values)` - Log participant details including:
   - Pot ID
   - Participant ID
@@ -190,7 +169,6 @@ Simple contract for logging participant information and activities.
 Handles logging of winner information and pot results.
 
 #### Core Functions:
-
 - `log-winner(winner-values)` - Log comprehensive winner data including:
   - Pot configuration details
   - Winner information
@@ -203,7 +181,6 @@ Handles logging of winner information and pot results.
 Defines the standard interface that all pot contracts must implement.
 
 #### Required Functions:
-
 - `join-pot(uint) -> (response bool uint)` - Join a pot with specified amount
 - `reward-pot-winner() -> (response bool uint)` - Execute winner selection
 - `get-pot-participants() -> (response (list 100 principal) (list 100 principal))` - Get participant list
@@ -213,14 +190,12 @@ Defines the standard interface that all pot contracts must implement.
 ## 🔄 System Workflow
 
 ### 1. Pot Creation
-
 1. User calls `register-pot()` in `stackpot-pots.clar`
 2. Platform fee is collected
 3. NFT is minted to represent pot ownership
 4. Pot is registered in the system
 
 ### 2. Participant Registration
-
 1. Users call `join-pot()` in `stackpot.clar`
 2. System validates participant eligibility
 3. STX is transferred to pot treasury
@@ -228,7 +203,6 @@ Defines the standard interface that all pot contracts must implement.
 5. Pot value is updated
 
 ### 3. Winner Selection
-
 1. Pot owner calls `reward-pot-winner()`
 2. System generates random number using VRF
 3. Winner is selected based on random index
@@ -242,19 +216,16 @@ Defines the standard interface that all pot contracts must implement.
 ## 🛡️ Security Features
 
 ### Randomness Security
-
 - **Verifiable Random Function**: Uses blockchain data for tamper-proof randomness
 - **Multiple Entropy Sources**: Combines block hash and sender information
 - **Deterministic Verification**: Anyone can verify the randomness source
 
 ### Access Control
-
 - **Owner-Only Operations**: Only pot owners can modify configurations
 - **Participant Validation**: Strict checks for participant eligibility
 - **Locking Mechanism**: Prevents manipulation during pot execution
 
 ### Financial Security
-
 - **Balance Verification**: Ensures sufficient funds before participation
 - **Automatic Refunds**: Participants always get their principal back
 - **Fee Transparency**: Clear fee structure and collection
@@ -272,7 +243,6 @@ The project includes comprehensive test suites for all contracts:
 - **`stackpot-vrf.test.ts`** - Random function tests
 
 ### Running Tests
-
 ```bash
 npm test                    # Run all tests
 npm run test:report        # Run with coverage report
@@ -282,19 +252,16 @@ npm run test:watch         # Watch mode for development
 ## 🚀 Getting Started
 
 ### Prerequisites
-
 - Node.js and npm
 - Clarinet SDK
 - Stacks blockchain access
 
 ### Installation
-
 ```bash
 npm install
 ```
 
 ### Development
-
 ```bash
 # Start Clarinet console
 clarinet console
@@ -309,7 +276,6 @@ npm run test:watch
 ## 📊 Configuration
 
 ### Default Settings
-
 - **Max Participants**: 100
 - **Min Amount**: 100 microSTX
 - **Pot Fee**: 100,000 microSTX
@@ -317,13 +283,11 @@ npm run test:watch
 - **Platform Address**: ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5
 
 ### Customization
-
 All parameters can be modified through the configuration system, allowing for flexible pot setups based on different use cases and requirements.
 
 ## 🔗 Contract Dependencies
 
 The contracts are designed to work together seamlessly:
-
 - `stackpot.clar` depends on `stackpot-pots.clar`, `stackpot-vrf.clar`
 - `stackpot-pots.clar` depends on `stackpot-pot-participants.clar`, `stackpot-pot-winners.clar`
 - All pot contracts implement `stackpot-pot-trait.clar` interface
@@ -339,28 +303,3 @@ Contributions are welcome! Please ensure all tests pass and follow the existing 
 ## ⚠️ Disclaimer
 
 This is a lottery system that involves financial transactions. Users should understand the risks involved and use at their own discretion. The system is designed for transparency and fairness, but users should always verify the contract behavior before participating.
-
-<!--errors-->
-| Contract                     | Constant                 | Value      | Description |
-|------------------------------|--------------------------|------------|-------------|
-| stackpot                     | INSUFFICIENT_BALANCE     | (err u100) |             |
-| stackpot-pots                | err-owner-only           | (err u100) |             |
-| stackpot-vrf                 | NOT_FOUND                | (err u100) |             |
-| stackpot-pots                | err-not-token-owner      | (err u101) |             |
-| stackpot                     | UNAUTHORIZED_PARTICIPANT | (err u102) |             |
-| stackpot-pots                | err-owner-not-permitted  | (err u102) |             |
-| stackpot                     | DELEGATE_LOCKED          | (err u103) |             |
-| stackpot-pots                | err-not-permitted        | (err u103) |             |
-| stackpot                     | NOT_FOUND                | (err u104) |             |
-| stackspot-distribute-rewards | NOT_FOUND                | (err u104) |             |
-| stackpot                     | UNAUTHORIZED_POT_OWNER   | (err u105) |             |
-| stackspot-distribute-rewards | UNAUTHORIZED             | (err u105) |             |
-| stackpot                     | MAX_PARTICIPANT_REACHED  | (err u107) |             |
-| stackpot                     | INVALID_ARGUMENT         | (err u108) |             |
-| stackpot-pots                | UNAUTHORIZED_POT_OWNER   | (err u108) |             |
-| stackpot                     | INSUFFICIENT_AMOUNT      | (err u109) |             |
-| stackpot-pots                | NOT_FOUND                | (err u109) |             |
-| stackpot                     | DUPLICATE_PARTICIPANT    | (err u110) |             |
-| stackpot-pots                | INSUFFICIENT_BALANCE     | (err u110) |             |
-| stackpot-pots                | UNAUTHORIZED_POT         | (err u111) |             |
-<!--errors-->
