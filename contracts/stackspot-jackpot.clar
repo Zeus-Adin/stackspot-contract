@@ -278,7 +278,7 @@
         (asserts! (is-eq pot-treasury (contract-of pot-contract)) ERR_UNAUTHORIZED)
 
         ;; Delegate treasury to pot contract
-        (try! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots delegate-treasury pot-contract (contract-of pot-contract)))
+        (try! (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots delegate-treasury pot-contract (contract-of pot-contract))))
 
         ;; Set pot starter principal
         (var-set pot-starter-principal (some tx-sender))
