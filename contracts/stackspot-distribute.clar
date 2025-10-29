@@ -65,7 +65,7 @@
             (pot-id (unwrap! (contract-call? contract get-pot-id) ERR_NOT_FOUND))
 
             ;; Pot Starter Values
-            (pot-starter-address (unwrap! (contract-call? contract get-pot-starter-principal) ERR_NOT_FOUND))
+            (pot-starter-address (unwrap! (unwrap! (contract-call? contract get-pot-starter-principal) ERR_NOT_FOUND) ERR_NOT_FOUND))
             (pot-starter-reward (* (/ pot-yeild u100) u5))
 
             ;; Claimer Values
@@ -144,21 +144,5 @@
             ok (ok true)
             err (err (to-uint err))
         )
-    )
-)
-
-(define-public (withdraw-from-pot (participant principal) (amount uint) (contract <stackspot-trait>))
-    (let 
-        (
-            (treasury-address (unwrap! (contract-call? contract get-pot-treasury) ERR_NOT_FOUND))
-            (treasury-balance (stx-get-balance treasury-address))
-        )
-        ;; Validate's if the pot treasury is the same as the pot treasury address
-        ;; Validate's if the contract caller is the allowed caller
-        (asserts! (is-eq treasury-address tx-sender) ERR_UNAUTHORIZED)
-        (asserts! (is-eq contract-caller allowed-caller) ERR_UNAUTHORIZED)
-
-        (try! (stx-transfer-memo? amount treasury-address participant (unwrap! (to-consensus-buff? "withdraw from pot") ERR_NOT_FOUND)))
-        (ok true)
     )
 )

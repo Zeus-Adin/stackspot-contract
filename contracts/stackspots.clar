@@ -9,6 +9,7 @@
 (define-constant ERR_UNAUTHORIZED (err u1101))
 (define-constant ERR_NOT_FOUND (err u1001))
 (define-constant ERR_INSUFFICIENT_BALANCE (err u1301))
+(define-constant ERR_INVALID_ARGUMENT_VALUE (err u1202))
 
 ;; NFT errors
 (define-constant err-owner-only (err u100))
@@ -41,10 +42,12 @@
 (define-public (register-pot (pot-values {
     owner: principal,
     contract: principal,
+    contract-sha-hash: (string-ascii 64),
 }))
     (let (
             (owner (get owner pot-values))
             (contract-address (get contract pot-values))
+            (contract-hash (get contract-sha-hash pot-values))
 
             (contract-info (unwrap! (principal-destruct? contract-address) ERR_NOT_FOUND))
             (contract-name (get name contract-info))
@@ -56,7 +59,7 @@
         )
         (asserts! (> new-pot-owner-balance platform-contracts-fee) ERR_INSUFFICIENT_BALANCE)
         (asserts! (is-eq tx-sender owner) ERR_UNAUTHORIZED)
-
+        (asserts! (> (len contract-hash) u0) ERR_INVALID_ARGUMENT_VALUE)
         ;; Mint NFT
         (try! (mint contract-address))
 
@@ -64,6 +67,7 @@
         (try! (log-pot {
             pot-id: (var-get last-pot-index),
             pot-address: contract-address,
+            contract-sha-hash: contract-hash,
             pot-owner: owner,
             pot-name: contract-name,
             pot-version: contract-version,
@@ -134,6 +138,7 @@
 (define-public (log-pot (pot-values {
     pot-id: uint,
     pot-address: principal,
+    contract-sha-hash: (string-ascii 64),
     pot-owner: principal,
     pot-name: (optional (string-ascii 255)),
     pot-version: (buff 1),
@@ -235,6 +240,7 @@
         )
         (asserts! (is-eq pot-contract (contract-of contract)) ERR_UNAUTHORIZED)
         (asserts! (is-eq contract-caller (contract-of contract)) ERR_UNAUTHORIZED)
+
         (try! (contract-call? .stackspot-distribute dispatch-principals contract))
         (ok true)
     )
@@ -248,6 +254,7 @@
         )
         (asserts! (is-eq pot-contract (contract-of contract)) ERR_UNAUTHORIZED)
         (asserts! (is-eq contract-caller (contract-of contract)) ERR_UNAUTHORIZED)
+
         (try! (contract-call? .stackspot-distribute dispatch-rewards winner-values contract))
         (ok true)
     )
@@ -261,23 +268,8 @@
         )
         (asserts! (is-eq pot-contract (contract-of contract)) ERR_UNAUTHORIZED)
         (asserts! (is-eq contract-caller (contract-of contract)) ERR_UNAUTHORIZED)
+
         (try! (contract-call? .stackspot-distribute delegate-treasury contract delegate-to))
-        (ok true)
-    )
-)
-
-(define-public (withdraw-from-pot (participant-index uint) (contract <stackspot-trait>))
-    (let 
-        (
-            (participants-values (unwrap! (contract-call? contract get-by-id-helper participant-index) ERR_NOT_FOUND))
-            (participant (unwrap! (get participant participants-values) ERR_NOT_FOUND))
-            (amount (unwrap! (get amount participants-values) ERR_NOT_FOUND))
-        )
-        ;; Validate's if the participant is the same as the tx-sender
-        (asserts! (is-eq participant tx-sender) ERR_UNAUTHORIZED)
-        (asserts! (is-eq contract-caller (contract-of contract)) ERR_UNAUTHORIZED)
-
-        (try! (contract-call? .stackspot-distribute withdraw-from-pot participant amount contract))
         (ok true)
     )
 )

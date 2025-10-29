@@ -41,7 +41,7 @@
 ;; Pot Starter Principal
 (define-data-var pot-starter-principal (optional principal) none)
 ;; Pot Claimer Principal
-(define-data-var pot-claimer-principal (optional principal) none)
+(define-data-var pot-claimer-principal principal tx-sender)
 
 ;; Pot Rounds Counter
 (define-data-var pot-rounds uint u0)
@@ -141,7 +141,7 @@
 
 ;; Pot Value
 (define-data-var total-pot-value uint u0)
-(define-read-only (get-pot-value) (var-get total-pot-value))
+(define-read-only (get-pot-value) (ok (var-get total-pot-value)))
 
 ;; Increment Pot Value
 (define-private (add-pot-value (amount uint))
@@ -157,20 +157,21 @@
 
 ;; Read-Only public function that gets participant by index
 (define-read-only (get-by-id-helper (n uint)) (ok (map-get? pot-participants-by-id n)))
+(define-read-only (get-by-id-helper-private (n uint)) (map-get? pot-participants-by-id n))
 
 ;; Read-Only public function that gets all participants
 (define-read-only (get-pot-participants)
     (let 
         (
             (n (get-list (var-get last-participant)))
-            (participants (match n value (map get-by-id-helper value) (list)))
+            (participants (match n value (map get-by-id-helper-private value) (list)))
         )
         (ok participants)
     )
 )
 ;; Get Pot Treasury
 (define-read-only (get-pot-treasury)
-    pot-treasury-address
+    (ok pot-treasury-address)
 )
 ;; Get Pot ID
 (define-read-only (get-pot-id)
@@ -179,11 +180,11 @@
 
 ;; Get Pot Starter Principal
 (define-read-only (get-pot-starter-principal)
-    (var-get pot-starter-principal)
+    (ok (var-get pot-starter-principal))
 )
 ;; Get Pot Claimer Principal
 (define-read-only (get-pot-claimer-principal)
-    (var-get pot-claimer-principal)
+    (ok (var-get pot-claimer-principal))
 )
 
 ;; Private Function That Pays Fees To Platform And Pot Owner
@@ -219,7 +220,7 @@
         (asserts! (not (is-some (map-get? pot-participants-by-principal participant))) ERR_DUPLICATE_PARTICIPANT)
 
         ;; Registers Participants Values To The Pot Maps
-        (map-insert pot-participants-by-principal participant amount)
+        (map-insert pot-participants-by-principal participant index-participants)
         (map-insert pot-participants-by-id index-participants {participant: participant, amount: amount})
 
         ;; Transfers Pot Fee To Pot Admin and Platform
@@ -254,7 +255,7 @@
     )
     (begin
         ;; Validate can join pot
-        (asserts! (validate-can-join-pot) ERR_POT_JOIN_CLOSED)
+        (asserts! (not (var-get locked)) ERR_POT_JOIN_CLOSED)
         ;; Validate amount is greater than 0
         (asserts! (> amount u0) ERR_INSUFFICIENT_AMOUNT)
         ;; Validate participant is the same as the tx sender
@@ -265,23 +266,10 @@
     )
 )
 
-;; Public Function that withdraws the participant's amount from the pot
-(define-public (withdraw-from-pot (pot-contract <stackspot-trait>))
-    (let ((participant-index (unwrap! (map-get? pot-participants-by-principal tx-sender) ERR_NOT_FOUND))) 
-        (asserts! (not (var-get locked)) ERR_POT_ALREADY_STARTED)
-
-        (try! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots withdraw-from-pot participant-index pot-contract))
-        (ok true)
-    )
-)
-
 ;; Public Function That Starts The Jackpot
 (define-public (start-stackspot-jackpot (pot-contract <stackspot-trait>))
     (let
-        ((pot-treasury (get-pot-treasury)))
-
-        ;; Validate pot is not locked
-        (asserts! (validate-can-join-pot) ERR_POT_JOIN_CLOSED)
+        ((pot-treasury (unwrap! (get-pot-treasury) ERR_NOT_FOUND)))
 
         ;; Validate can pool pot
         (asserts! (validate-can-pool-pot) ERR_POOL_ENTRY_PASSED)
@@ -302,7 +290,6 @@
         (print {
             event: "start-stackspot-jackpot",
             pot-starter-principal: tx-sender,
-            port-claim-principal: (var-get pot-claimer-principal),
             pot-contract: (contract-of pot-contract),
             pot-treasury: pot-treasury,
             pot-participants: (unwrap! (get-pot-participants) ERR_NOT_FOUND),
@@ -429,15 +416,8 @@
     )
 )
 
-;; Initialize config
-(var-set reward-token "sbtc")
-(map-insert config "cycle" u1)
-(map-insert config "pot-fee" u100000)
-(map-insert config "min-amount" u100)
-(map-insert config "max-participants" u100)
-
 ;; Register pot
-(contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots register-pot {owner: tx-sender, contract: (as-contract tx-sender)})
+(contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots register-pot {owner: tx-sender, contract: (as-contract tx-sender), contract-sha-hash: "a3f7d2b84c19ef56b92e0c1da4375b8d1cf8a0eeb6f54a139fb8b267e5cd41f9"})
 
 ;; Get random digit from VRF and return the winner index
 (define-private (get-random-index (participant-count uint))
@@ -459,3 +439,11 @@
         (ok (mod vrf-random-digit participant-count))
     )
 )
+
+;; Initialize config
+;; These will be added after sha-hashing is done
+(var-set reward-token "sbtc")
+(map-insert config "cycle" u1)
+(map-insert config "pot-fee" u100000)
+(map-insert config "min-amount" u100)
+(map-insert config "max-participants" u100)

@@ -14,8 +14,9 @@ describe("example tests", () => {
     expect(simnet.blockHeight).toBeDefined();
   });
 
-  // it("shows an example", () => {
-  //   const { result } = simnet.callReadOnlyFn("counter", "get-counter", [], address1);
-  //   expect(result).toBeUint(0);
-  // });
+  it("shows an example", () => {
+    const { result } = simnet.callReadOnlyFn("stackspot-jackpot", "validate-can-claim-pot", [], address1);
+    expect(result).toBeBool(false);
+  });
+  
 });

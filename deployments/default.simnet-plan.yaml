@@ -64,7 +64,7 @@ plan:
             emulated-sender: SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9
             path: "./.cache/requirements/SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9.nft-trait.clar"
             clarity-version: 1
-      epoch: "2.0"
+      epoch: "2.1"
     - id: 1
       transactions:
         - emulated-contract-publish:
@@ -78,16 +78,6 @@ plan:
             path: contracts/stackspot-trait.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: stackspot-registry
-            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/stackspot-registry.clar
-            clarity-version: 3
-        - emulated-contract-publish:
-            contract-name: stackspot-winners
-            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/stackspot-winners.clar
-            clarity-version: 3
-        - emulated-contract-publish:
             contract-name: stackspot-distribution-trait
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/stackspot-distribution-trait.clar
@@ -98,14 +88,24 @@ plan:
             path: contracts/stackspot-distribute.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: stackspots
-            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/stackspots.clar
-            clarity-version: 3
-        - emulated-contract-publish:
             contract-name: stackspot-vrf
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/stackspot-vrf.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: stackspot-registry
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/stackspot-registry.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: stackspot-winners
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/stackspot-winners.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: stackspots
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/stackspots.clar
             clarity-version: 3        
       epoch: "3.1"
     - id: 2
