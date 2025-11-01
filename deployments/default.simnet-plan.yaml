@@ -106,7 +106,12 @@ plan:
             contract-name: stackspots
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/stackspots.clar
-            clarity-version: 3       
+            clarity-version: 3 
+        - emulated-contract-publish:
+            contract-name: stackspot-audited-contracts
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/stackspot-audited-contracts.clar
+            clarity-version: 3          
       epoch: "3.1"
     - id: 2
       transactions:

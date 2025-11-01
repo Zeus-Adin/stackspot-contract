@@ -10,6 +10,7 @@
 (define-constant ERR_NOT_FOUND (err u1001))
 (define-constant ERR_INSUFFICIENT_BALANCE (err u1301))
 (define-constant ERR_INVALID_ARGUMENT_VALUE (err u1202))
+(define-constant ERR_NOT_CONTRACT_AUDITED (err u1103))
 
 ;; NFT errors
 (define-constant err-owner-only (err u100))
@@ -265,7 +266,9 @@
         (
             (pot-detailes (unwrap! (get-pot-info (contract-of contract)) ERR_NOT_FOUND))  
             (pot-contract (get pot-contract pot-detailes))
+            (is-audited (unwrap! (contract-call? .stackspot-audited-contracts is-audited-contract contract) ERR_NOT_FOUND))
         )
+        (asserts! is-audited ERR_NOT_CONTRACT_AUDITED)
         (asserts! (is-eq pot-contract (contract-of contract)) ERR_UNAUTHORIZED)
         (asserts! (is-eq contract-caller (contract-of contract)) ERR_UNAUTHORIZED)
 

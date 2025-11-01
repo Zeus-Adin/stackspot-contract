@@ -36,6 +36,7 @@
 (define-constant pot-treasury-address (as-contract tx-sender))
 ;; Pot Admin
 (define-data-var pot-admin principal tx-sender)
+(define-read-only (get-pot-admin) (ok (var-get pot-admin)))
 
 
 ;; Pot Starter Principal
@@ -187,15 +188,6 @@
     (ok (var-get pot-claimer-principal))
 )
 
-;; Private Function That Pays Fees To Platform And Pot Owner
-(define-private (pay-fees (amount uint))
-    (begin
-        (try! (stx-transfer-memo? (* (/ amount u100) u10) tx-sender platform-address (unwrap! (to-consensus-buff? "platform-fee") ERR_NOT_FOUND)))
-        (try! (stx-transfer-memo? (* (/ amount u100) u90) tx-sender (var-get pot-admin) (unwrap! (to-consensus-buff? "pot-fee") ERR_NOT_FOUND)))
-        (ok true)
-    )
-)
-
 ;; Private helper function that delegates to pot-treasury
 (define-private (delegate-to-pot
         (amount uint)
@@ -222,9 +214,6 @@
         ;; Registers Participants Values To The Pot Maps
         (map-insert pot-participants-by-principal participant index-participants)
         (map-insert pot-participants-by-id index-participants {participant: participant, amount: amount})
-
-        ;; Transfers Pot Fee To Pot Admin and Platform
-        (try! (pay-fees pot-fee))
 
         ;; Transfers User's Delegated Amount To Pot Treasury
         (try! (stx-transfer-memo? amount participant pot-treasury-address (unwrap! (to-consensus-buff? "join pot") ERR_NOT_FOUND)))

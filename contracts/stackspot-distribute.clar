@@ -12,6 +12,9 @@
 (define-constant pot-distribution-admin (as-contract tx-sender))
 (define-constant allowed-caller .stackspots)
 
+;; Platform Address
+(define-constant platform-address 'STNHKEPYEPJ8ET55ZZ0M5A34J0R3N5FM2CMMMAZ6)
+
 ;; Get PoX Info and return pool config
 (define-read-only (get-pox-info) (unwrap-panic (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sim-pox get-pox-info)))
 (define-read-only (get-pool-config) 
@@ -112,13 +115,21 @@
             (participants-count (unwrap! (contract-call? contract get-last-participant) ERR_NOT_FOUND))
             (pot-id (unwrap! (contract-call? contract get-pot-id) ERR_NOT_FOUND))
 
+            ;; Pot Fee
+            (pot-owner-address (unwrap! (contract-call? contract get-pot-admin) ERR_NOT_FOUND))
+            (pot-fee (* (/ pot-yeild u100) u5))
+
+            ;; Platform Royalty
+            (platform-royalty-address platform-address)
+            (platform-royalty-reward (* (/ pot-yeild u100) u1))
+
             ;; Pot Starter Values
             (pot-starter-address (unwrap! (unwrap! (contract-call? contract get-pot-starter-principal) ERR_NOT_FOUND) ERR_NOT_FOUND))
-            (pot-starter-reward (* (/ pot-yeild u100) u5))
+            (pot-starter-reward (* (/ pot-yeild u100) u2))
 
             ;; Claimer Values
             (claimer-address (unwrap! (contract-call? contract get-pot-claimer-principal) ERR_NOT_FOUND))
-            (claimer-reward (* (/ pot-yeild u100) u5))
+            (claimer-reward (* (/ pot-yeild u100) u2))
 
             ;; Winner Values
             (winner-address (get participant winner-values))
@@ -131,6 +142,23 @@
         ;; Validate's if the contract caller is the allowed caller
         (asserts! (is-eq contract-caller allowed-caller) ERR_UNAUTHORIZED)
 
+        ;; Dispatch platform royalty reward
+        (if (> platform-royalty-reward u0)
+            (begin 
+                (try! (stx-transfer-memo? platform-royalty-reward pot-treasury platform-royalty-address (unwrap! (to-consensus-buff? "platform royalty reward") ERR_NOT_FOUND)))
+                true
+            )
+            false
+        )
+
+        ;; Dispatch pot fee reward
+        (if (> pot-fee u0)
+            (begin 
+                (try! (stx-transfer-memo? pot-fee pot-treasury pot-owner-address (unwrap! (to-consensus-buff? "pot fee reward") ERR_NOT_FOUND)))
+                true
+            )
+            false
+        )
         ;; Dispatch pot starter reward
         (if (> pot-starter-reward u0)
             (begin 

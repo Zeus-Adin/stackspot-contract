@@ -7,9 +7,23 @@ cache_dir = './.cache'
 
 [[project.requirements]]
 contract_id = 'SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9.nft-trait'
-
 [contracts.sim-pox]
 path = 'contracts/sim-pox.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.stackspot-audited-contracts]
+path = 'contracts/stackspot-audited-contracts.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.stackspot-distribute]
+path = 'contracts/stackspot-distribute.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.stackspot-distribution-trait]
+path = 'contracts/stackspot-distribution-trait.clar'
 clarity_version = 3
 epoch = 3.1
 
@@ -28,6 +42,11 @@ path = 'contracts/stackspot-trait.clar'
 clarity_version = 3
 epoch = 3.1
 
+[contracts.stackspot-vrf]
+path = 'contracts/stackspot-vrf.clar'
+clarity_version = 3
+epoch = 3.1
+
 [contracts.stackspot-winners]
 path = 'contracts/stackspot-winners.clar'
 clarity_version = 3
@@ -35,21 +54,6 @@ epoch = 3.1
 
 [contracts.stackspots]
 path = 'contracts/stackspots.clar'
-clarity_version = 3
-epoch = 3.1
-
-[contracts.stackspot-vrf]
-path = 'contracts/stackspot-vrf.clar'
-clarity_version = 3
-epoch = 3.1
-
-[contracts.stackspot-distribute]
-path = 'contracts/stackspot-distribute.clar'
-clarity_version = 3
-epoch = 3.1
-
-[contracts.stackspot-distribution-trait]
-path = 'contracts/stackspot-distribution-trait.clar'
 clarity_version = 3
 epoch = 3.1
 [repl.analysis]
