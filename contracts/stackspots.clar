@@ -13,10 +13,10 @@
 (define-constant ERR_NOT_CONTRACT_AUDITED (err u1103))
 
 ;; NFT errors
-(define-constant err-owner-only (err u100))
-(define-constant err-not-token-owner (err u101))
-(define-constant err-owner-not-permitted (err u102))
-(define-constant err-not-permitted (err u103))
+(define-constant ERR_OWNER_ONLY (err u200))
+(define-constant ERR_NOT_TOKEN_OWNER (err u201))
+(define-constant ERR_OWNER_NOT_PERMITTED (err u202))
+(define-constant ERR_NOT_PERMITTED (err u203))
 
 
 ;; NFT Declaration
@@ -58,6 +58,7 @@
 
             (platform-contracts-fee (var-get fee))
         )
+        (asserts! (contract-call? .stackspot-admin can-deploy-pot) ERR_UNAUTHORIZED)
         (asserts! (> new-pot-owner-balance platform-contracts-fee) ERR_INSUFFICIENT_BALANCE)
         (asserts! (is-eq tx-sender owner) ERR_UNAUTHORIZED)
         (asserts! (> (len contract-hash) u0) ERR_INVALID_ARGUMENT_VALUE)
@@ -102,18 +103,15 @@
     pot-value: uint,
     ;; Pot Config Values
     pot-cycle: uint,
-    pot-reward-token: (string-ascii 16),
-    pot-fee: uint,
+    pot-reward-token: (string-ascii 16),    
     pot-min-amount: uint,
-    pot-max-participants: uint,
-    
+    pot-max-participants: uint,    
     ;; Pot Starter Values
     pot-starter-address: principal,
     pot-starter-amount: uint,
     ;; Claimer Values
     claimer-address: principal,
-    claimer-amount: uint,
-    
+    claimer-amount: uint,    
     ;; Winner Values
     winner-id: uint,
     winner-address: principal,
@@ -131,7 +129,7 @@
             (pot-id (get pot-id winner-values))
             (pot-address (unwrap! (nft-get-owner? stackpot-pot pot-id) ERR_NOT_FOUND))
         )
-        (asserts! (is-eq pot-address contract-caller) err-not-permitted)
+        (asserts! (is-eq pot-address contract-caller) ERR_NOT_PERMITTED)
         (ok (contract-call? .stackspot-winners log-winner winner-values))
     )
 )
@@ -151,7 +149,7 @@
             (pot-id (get pot-id pot-values))
             (pot-address (unwrap! (nft-get-owner? stackpot-pot pot-id) ERR_NOT_FOUND))
         )
-        (asserts! (is-eq pot-address contract-caller) err-not-permitted)
+        (asserts! (is-eq pot-address contract-caller) ERR_NOT_PERMITTED)
         (is-ok (contract-call? .stackspot-registry log-pot pot-values))
         (ok true)
     )
@@ -181,7 +179,7 @@
         (recipient principal)
     )
     (begin
-        (asserts! false err-not-permitted)
+        (asserts! false ERR_NOT_PERMITTED)
         (nft-transfer? stackpot-pot token-id sender recipient)
     )
 )
@@ -252,7 +250,9 @@
         (
             (pot-detailes (unwrap! (get-pot-info (contract-of contract)) ERR_NOT_FOUND))  
             (pot-contract (get pot-contract pot-detailes))
+            (is-audited (unwrap! (contract-call? .stackspot-audited-contracts is-audited-contract contract) ERR_NOT_FOUND))
         )
+        (asserts! is-audited ERR_NOT_CONTRACT_AUDITED)
         (asserts! (is-eq pot-contract (contract-of contract)) ERR_UNAUTHORIZED)
         (asserts! (is-eq contract-caller (contract-of contract)) ERR_UNAUTHORIZED)
 

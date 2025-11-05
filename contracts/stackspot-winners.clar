@@ -1,3 +1,5 @@
+(define-constant ERR_UNAUTHORIZED (err u1101))
+
 (define-public (log-winner (winner-values {
     ;; Pot Values
     pot-id: uint,
@@ -8,7 +10,6 @@
     ;; Pot Config Values
     pot-cycle: uint,
     pot-reward-token: (string-ascii 16),
-    pot-fee: uint,
     pot-min-amount: uint,
     pot-max-participants: uint,
     
@@ -33,6 +34,7 @@
     }
 }))
     (begin
+        (asserts! (is-eq contract-caller .stackspots) ERR_UNAUTHORIZED)
         (print winner-values)
         (ok true)
     )

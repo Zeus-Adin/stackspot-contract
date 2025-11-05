@@ -19,7 +19,6 @@
 (define-constant ERR_INSUFFICIENT_BALANCE (err u1301))
 (define-constant ERR_INSUFFICIENT_AMOUNT (err u1302))
 (define-constant ERR_INSUFFICIENT_POT_BALANCE (err u1303))
-(define-constant ERR_INSUFFICIENT_POT_REWARD (err u1304))
 
 ;; --- Pot Lifecycle
 (define-constant ERR_POT_JOIN_CLOSED (err u1401))
@@ -145,6 +144,12 @@
     )
 )
 
+;; Reward token
+(define-data-var reward-token (string-ascii 16) "stx")
+(define-read-only (get-reward-token)
+    (var-get reward-token)
+)
+
 ;; Pot Value
 (define-data-var total-pot-value uint u0)
 (define-read-only (get-pot-value)
@@ -163,31 +168,12 @@
 ;; Get List By Length
 (define-read-only (get-list (length uint))
     (slice?
-        (list
-            u0             u1             u2             u3             u4
-                        u5             u6             u7             u8             u9
-                        u10             u11             u12             u13             u14
-                        u15             u16             u17             u18
-            u19             u20             u21             u22             u23
-                        u24             u25             u26             u27             u28
-                        u29             u30             u31             u32             u33
-                        u34             u35
-            u36             u37             u38             u39             u40
-                        u41             u42             u43             u44             u45
-                        u46             u47             u48             u49             u50
-                        u51             u52
-            u53             u54             u55             u56             u57
-                        u58             u59             u60             u61             u62
-                        u63             u64             u65             u66             u67
-                        u68             u69
-            u70             u71             u72             u73             u74
-                        u75             u76             u77             u78             u79
-                        u80             u81             u82             u83             u84
-                        u85             u86
-            u87             u88             u89             u90             u91
-                        u92             u93             u94             u95             u96
-                        u97             u98             u99
-        )
+        (list u0 u1 u2 u3 u4 u5 u6 u7 u8 u9 u10 u11 u12 u13 u14 u15 u16 u17 u18
+            u19 u20 u21 u22 u23 u24 u25 u26 u27 u28 u29 u30 u31 u32 u33 u34 u35
+            u36 u37 u38 u39 u40 u41 u42 u43 u44 u45 u46 u47 u48 u49 u50 u51 u52
+            u53 u54 u55 u56 u57 u58 u59 u60 u61 u62 u63 u64 u65 u66 u67 u68 u69
+            u70 u71 u72 u73 u74 u75 u76 u77 u78 u79 u80 u81 u82 u83 u84 u85 u86
+            u87 u88 u89 u90 u91 u92 u93 u94 u95 u96 u97 u98 u99)
         u0 length
     )
 )
@@ -403,30 +389,26 @@
             ;; Get participants list
             (participants (get-pot-participants))
             ;; Get stacked reward
-            (stacked-reward (unwrap! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sbtc-token get-balance pot-treasury-address) ERR_NOT_FOUND))
+            (stacked-reward (- (stx-get-balance pot-treasury-address) (var-get total-pot-value)))
             ;; Calculate pot starter's reward
             (pot-starter (unwrap! (var-get pot-starter-principal) ERR_NOT_FOUND))
             (pot-starter-reward (if (> stacked-reward u0)
-                (* (/ stacked-reward u100) u2)
+                (* (/ stacked-reward u100) u5)
                 u0
             ))
             ;;;;  Calculate claimer's reward
             (claimer tx-sender)
             (claimer-reward (if (> stacked-reward u0)
-                (* (/ stacked-reward u100) u2)
+                (* (/ stacked-reward u100) u5)
                 u0
             ))
             ;; Calculate winner's reward 99% of stacked reward or 100% of stacked reward
-            (winners-reward (* (/ stacked-reward u100) u90))
+            (winners-reward (- stacked-reward (+ pot-starter-reward claimer-reward)))
             ;; Update pot rounds
             (new-round (+ (var-get pot-rounds) u1))
         )
         ;; Validate can claim pot
         (asserts! (validate-can-claim-pot) ERR_POT_CLAIM_NOT_REACHED)
-        (asserts! (> stacked-reward u0) ERR_INSUFFICIENT_POT_REWARD)
-
-        ;; Set pot claimer principal
-        (var-set pot-claimer-principal tx-sender)
 
         ;; Returns participants principals
         (try! (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots
@@ -449,7 +431,7 @@
             pot-value: (var-get total-pot-value),
             ;; Pot Config Values
             pot-cycle: (unwrap! (map-get? config "cycle") ERR_NOT_FOUND),
-            pot-reward-token: "sbtc",
+            pot-reward-token: (var-get reward-token),
             pot-min-amount: (unwrap! (map-get? config "min-amount") ERR_NOT_FOUND),
             pot-max-participants: (unwrap! (map-get? config "max-participants") ERR_NOT_FOUND),
             ;; Pot Starter Values
@@ -480,7 +462,7 @@
             pot-value: (var-get total-pot-value),
             ;; Pot Config Values
             pot-cycle: (unwrap! (map-get? config "cycle") ERR_NOT_FOUND),
-            pot-reward-token: "sbtc",
+            pot-reward-token: (var-get reward-token),
             pot-min-amount: (unwrap! (map-get? config "min-amount") ERR_NOT_FOUND),
             pot-max-participants: (unwrap! (map-get? config "max-participants") ERR_NOT_FOUND),
             ;; Pot Starter Values
@@ -503,10 +485,3 @@
         (ok true)
     )
 )
-
-;; Pot Deployer Configuration
-(map-set config "cycle" u1)
-(map-set config "min-amount" u100)
-(map-set config "max-participants" u100)
-;; Register pot
-(contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots register-pot {owner: tx-sender, contract: (as-contract tx-sender), contract-sha-hash: "5c15e5196a9c0afb580a242fbafd41cee6d4fcf5f196d3b2fdc92d7ca30e2bba"})

@@ -7,13 +7,13 @@
 ;; in order to sample the set of miners and determine
 ;; which one may claim the token batch for the given block height.
 
-(define-constant NOT_FOUND (err u100))
+(define-constant ERR_NOT_FOUND (err u1001))
 
 (define-public (get-random-uint-at-block (blockHeight uint))
   (let 
     (
-      (stacks-block-hash (unwrap! (get-burn-block-info? header-hash blockHeight) NOT_FOUND))
-      (senders-principal-hash (unwrap! (to-consensus-buff? tx-sender) NOT_FOUND))
+      (stacks-block-hash (unwrap! (get-burn-block-info? header-hash blockHeight) ERR_NOT_FOUND))
+      (senders-principal-hash (unwrap! (to-consensus-buff? tx-sender) ERR_NOT_FOUND))
       (merged-buff (concat stacks-block-hash senders-principal-hash))
       (merged-sha256 (sha256 merged-buff))
       (lower-16-le-sha256 (lower-16-le merged-sha256))

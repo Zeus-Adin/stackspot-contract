@@ -1,3 +1,5 @@
+(define-constant ERR_UNAUTHORIZED (err u1101))
+
 (define-public (log-pot (participant-values {
     pot-id: uint,
     pot-address: principal,
@@ -9,5 +11,9 @@
     pot-platform-contract-fee: uint,
     pot-registry-timestamp: uint,
 }))
-    (ok (print participant-values))
+    (begin 
+        (asserts! (is-eq contract-caller .stackspots) ERR_UNAUTHORIZED)
+        (print participant-values)
+        (ok true)
+    )
 )

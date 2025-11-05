@@ -7,8 +7,31 @@ cache_dir = './.cache'
 
 [[project.requirements]]
 contract_id = 'SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9.nft-trait'
-[contracts.sim-pox]
-path = 'contracts/sim-pox.clar'
+
+[[project.requirements]]
+contract_id = 'ST1NXBK3K5YYMD6FD41MVNP3JS1GABZ8TRVX023PT.nft-trait'
+[contracts.stackspot-admin]
+path = 'contracts/stackspot-admin.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.sbtc-registry]
+path = 'contracts/sbtc-registry.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.sbtc-token]
+path = 'contracts/sbtc-token.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.sim-pox-4]
+path = 'contracts/sim-pox-4.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.sim-pox4-multi-pool-v1]
+path = 'contracts/sim-pox4-multi-pool-v1.clar'
 clarity_version = 3
 epoch = 3.1
 

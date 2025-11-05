@@ -1,4 +1,4 @@
-(use-trait stackspot-trait 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspot-trait.stackspot-trait)
+(use-trait stackspot-trait .stackspot-trait.stackspot-trait)
 
 (define-map audited-contracts principal bool)
 
@@ -6,16 +6,16 @@
 
 (define-constant platform-admin tx-sender)
 
-(define-public (add-audited-contract (contract <stackspot-trait>) (is-audited bool))
+(define-public (update-audited-contract (contract <stackspot-trait>) (is-audited bool))
     (begin
-        (asserts! (is-eq tx-sender platform-admin) ERR_ADMIN_ONLY)
+        (asserts! (contract-call? .stackspot-admin is-admin) ERR_ADMIN_ONLY)
         (ok (map-set audited-contracts (contract-of contract) is-audited))
     )
 )
 
 (define-public (remove-audited-contract (contract <stackspot-trait>))
     (begin
-        (asserts! (is-eq tx-sender platform-admin) ERR_ADMIN_ONLY)
+        (asserts! (contract-call? .stackspot-admin is-admin) ERR_ADMIN_ONLY)
         (ok (map-delete audited-contracts (contract-of contract)))
     )
 )
