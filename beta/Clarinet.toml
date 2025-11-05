@@ -1,0 +1,53 @@
+[project]
+name = 'beta'
+description = ''
+authors = []
+telemetry = true
+cache_dir = './.cache'
+requirements = []
+[contracts.stackspot-admin]
+path = 'contracts/stackspot-admin.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.stackspot-distribute]
+path = 'contracts/stackspot-distribute.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.stackspot-registery]
+path = 'contracts/stackspot-registery.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.stackspot-trait]
+path = 'contracts/stackspot-trait.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.stackspot-vrf]
+path = 'contracts/stackspot-vrf.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.stackspot-winners]
+path = 'contracts/stackspot-winners.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.stackspots]
+path = 'contracts/stackspots.clar'
+clarity_version = 3
+epoch = 3.1
+[repl.analysis]
+passes = ['check_checker']
+
+[repl.analysis.check_checker]
+strict = false
+trusted_sender = false
+trusted_caller = false
+callee_filter = false
+
+[repl.remote_data]
+enabled = false
+api_url = 'https://api.hiro.so'

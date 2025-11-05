@@ -11,6 +11,8 @@
 (define-constant ERR_INSUFFICIENT_BALANCE (err u1301))
 (define-constant ERR_INVALID_ARGUMENT_VALUE (err u1202))
 (define-constant ERR_NOT_CONTRACT_AUDITED (err u1103))
+(define-constant ERR_MINT_FAILED (err u1106))
+(define-constant ERR_LOG_FAILED (err u1107))
 
 ;; NFT errors
 (define-constant ERR_OWNER_ONLY (err u200))
@@ -18,15 +20,24 @@
 (define-constant ERR_OWNER_NOT_PERMITTED (err u202))
 (define-constant ERR_NOT_PERMITTED (err u203))
 
-
 ;; NFT Declaration
 (define-non-fungible-token stackpot-pot uint)
-(define-map pot-contract-with-index principal uint)
-(define-map pot-id-info uint {pot-id: uint, pot-name: (string-ascii 255), pot-owner: principal, pot-contract: principal})
+(define-map pot-contract-with-index
+    principal
+    uint
+)
+(define-map pot-id-info
+    uint
+    {
+        pot-id: uint,
+        pot-name: (string-ascii 255),
+        pot-owner: principal,
+        pot-contract: principal,
+    }
+)
 
 ;; NFT variables
 (define-data-var last-pot-index uint u0)
-
 
 ;; Core actions
 (define-data-var fee uint u0)
@@ -49,34 +60,42 @@
             (owner (get owner pot-values))
             (contract-address (get contract pot-values))
             (contract-hash (get contract-sha-hash pot-values))
-
             (contract-info (unwrap! (principal-destruct? contract-address) ERR_NOT_FOUND))
             (contract-name (get name contract-info))
             (contract-version (get version contract-info))
             (contract-hash-bytes (get hash-bytes contract-info))
             (new-pot-owner-balance (stx-get-balance owner))
-
             (platform-contracts-fee (var-get fee))
         )
-        (asserts! (contract-call? .stackspot-admin can-deploy-pot) ERR_UNAUTHORIZED)
-        (asserts! (> new-pot-owner-balance platform-contracts-fee) ERR_INSUFFICIENT_BALANCE)
+        (asserts! (contract-call? .stackspot-admin can-deploy-pot)
+            ERR_UNAUTHORIZED
+        )
+        (asserts! (> new-pot-owner-balance platform-contracts-fee)
+            ERR_INSUFFICIENT_BALANCE
+        )
         (asserts! (is-eq tx-sender owner) ERR_UNAUTHORIZED)
         (asserts! (> (len contract-hash) u0) ERR_INVALID_ARGUMENT_VALUE)
         ;; Mint NFT
-        (try! (mint contract-address))
+        (asserts! (> (unwrap! (mint contract-address) ERR_NOT_FOUND) u0) ERR_MINT_FAILED)
 
         ;; Log pot registered
-        (try! (log-pot {
-            pot-id: (var-get last-pot-index),
-            pot-address: contract-address,
-            contract-sha-hash: contract-hash,
-            pot-owner: owner,
-            pot-name: contract-name,
-            pot-version: contract-version,
-            pot-hash-bytes: contract-hash-bytes,
-            pot-registry-timestamp: stacks-block-height,
-            pot-platform-contract-fee: platform-contracts-fee
-        }))
+        (asserts!
+            (unwrap!
+                (log-pot {
+                    pot-id: (var-get last-pot-index),
+                    pot-address: contract-address,
+                    contract-sha-hash: contract-hash,
+                    pot-owner: owner,
+                    pot-name: contract-name,
+                    pot-version: contract-version,
+                    pot-hash-bytes: contract-hash-bytes,
+                    pot-registry-timestamp: stacks-block-height,
+                    pot-platform-contract-fee: platform-contracts-fee,
+                })
+                ERR_NOT_FOUND
+            )
+            ERR_LOG_FAILED
+        )
 
         ;; Print event
         (print {
@@ -103,15 +122,15 @@
     pot-value: uint,
     ;; Pot Config Values
     pot-cycle: uint,
-    pot-reward-token: (string-ascii 16),    
+    pot-reward-token: (string-ascii 16),
     pot-min-amount: uint,
-    pot-max-participants: uint,    
+    pot-max-participants: uint,
     ;; Pot Starter Values
     pot-starter-address: principal,
     pot-starter-amount: uint,
     ;; Claimer Values
     claimer-address: principal,
-    claimer-amount: uint,    
+    claimer-amount: uint,
     ;; Winner Values
     winner-id: uint,
     winner-address: principal,
@@ -123,14 +142,15 @@
     winner-timestamp: {
         stacks-block-height: uint,
         burn-block-height: uint,
-    }
+    },
 }))
     (let (
             (pot-id (get pot-id winner-values))
             (pot-address (unwrap! (nft-get-owner? stackpot-pot pot-id) ERR_NOT_FOUND))
         )
         (asserts! (is-eq pot-address contract-caller) ERR_NOT_PERMITTED)
-        (ok (contract-call? .stackspot-winners log-winner winner-values))
+        (asserts! (unwrap! (contract-call? .stackspot-winners log-winner winner-values) ERR_NOT_FOUND) ERR_LOG_FAILED)
+        (ok true)
     )
 )
 
@@ -143,14 +163,14 @@
     pot-version: (buff 1),
     pot-hash-bytes: (buff 20),
     pot-platform-contract-fee: uint,
-    pot-registry-timestamp: uint
+    pot-registry-timestamp: uint,
 }))
     (let (
             (pot-id (get pot-id pot-values))
             (pot-address (unwrap! (nft-get-owner? stackpot-pot pot-id) ERR_NOT_FOUND))
         )
         (asserts! (is-eq pot-address contract-caller) ERR_NOT_PERMITTED)
-        (is-ok (contract-call? .stackspot-registry log-pot pot-values))
+        (asserts! (unwrap! (contract-call? .stackspot-registry log-pot pot-values) ERR_NOT_FOUND) ERR_LOG_FAILED)
         (ok true)
     )
 )
@@ -185,8 +205,7 @@
 )
 
 (define-public (mint (recipient principal))
-    (let 
-        (
+    (let (
             (token-id (+ (var-get last-pot-index) u1))
             (platform-contracts-fee (var-get fee))
             (contract-info (unwrap! (principal-destruct? recipient) ERR_NOT_FOUND))
@@ -199,12 +218,19 @@
         ;; Validate's if the platform treasury is not the recipient
         (asserts! (not (is-eq platform-treasury recipient)) ERR_UNAUTHORIZED)
 
-        ;; ;; Transfer fee to platform
-        (try! (stx-transfer-memo? platform-contracts-fee tx-sender platform-treasury (unwrap! (to-consensus-buff? "pot mint") ERR_NOT_FOUND)))
+        ;;;;  Transfer fee to platform
+        (try! (stx-transfer-memo? platform-contracts-fee tx-sender platform-treasury
+            (unwrap! (to-consensus-buff? "pot mint") ERR_NOT_FOUND)
+        ))
 
         (try! (nft-mint? stackpot-pot token-id recipient))
         (map-insert pot-contract-with-index recipient token-id)
-        (map-insert pot-id-info token-id {pot-id: token-id, pot-name: (unwrap! contract-name ERR_NOT_FOUND), pot-owner: recipient, pot-contract: recipient})
+        (map-insert pot-id-info token-id {
+            pot-id: token-id,
+            pot-name: (unwrap! contract-name ERR_NOT_FOUND),
+            pot-owner: recipient,
+            pot-contract: recipient,
+        })
         (var-set last-pot-index token-id)
 
         ;; Print event
@@ -222,8 +248,7 @@
 )
 
 (define-read-only (get-pot-info (owner principal))
-    (let 
-        (
+    (let (
             (pot-index (unwrap! (unwrap! (get-token-id owner) ERR_NOT_FOUND) ERR_NOT_FOUND))
             (pot-info (unwrap! (map-get? pot-id-info pot-index) ERR_NOT_FOUND))
         )
@@ -232,8 +257,7 @@
 )
 
 (define-public (dispatch-principals (contract <stackspot-trait>))
-    (let 
-        (
+    (let (
             (pot-detailes (unwrap! (get-pot-info (contract-of contract)) ERR_NOT_FOUND))
             (pot-contract (get pot-contract pot-detailes))
         )
@@ -245,34 +269,55 @@
     )
 )
 
-(define-public (dispatch-rewards (winner-values {participant: principal, amount: uint}) (contract <stackspot-trait>))
-    (let 
-        (
-            (pot-detailes (unwrap! (get-pot-info (contract-of contract)) ERR_NOT_FOUND))  
+(define-public (dispatch-rewards
+        (winner-values {
+            participant: principal,
+            amount: uint,
+        })
+        (contract <stackspot-trait>)
+    )
+    (let (
+            (pot-detailes (unwrap! (get-pot-info (contract-of contract)) ERR_NOT_FOUND))
             (pot-contract (get pot-contract pot-detailes))
-            (is-audited (unwrap! (contract-call? .stackspot-audited-contracts is-audited-contract contract) ERR_NOT_FOUND))
+            (is-audited (unwrap!
+                (contract-call? .stackspot-audited-contracts is-audited-contract
+                    contract
+                )
+                ERR_NOT_FOUND
+            ))
         )
         (asserts! is-audited ERR_NOT_CONTRACT_AUDITED)
         (asserts! (is-eq pot-contract (contract-of contract)) ERR_UNAUTHORIZED)
         (asserts! (is-eq contract-caller (contract-of contract)) ERR_UNAUTHORIZED)
 
-        (try! (contract-call? .stackspot-distribute dispatch-rewards winner-values contract))
+        (try! (contract-call? .stackspot-distribute dispatch-rewards winner-values
+            contract
+        ))
         (ok true)
     )
 )
 
-(define-public (delegate-treasury (contract <stackspot-trait>) (delegate-to principal))
-    (let 
-        (
-            (pot-detailes (unwrap! (get-pot-info (contract-of contract)) ERR_NOT_FOUND))  
+(define-public (delegate-treasury
+        (contract <stackspot-trait>)
+        (delegate-to principal)
+    )
+    (let (
+            (pot-detailes (unwrap! (get-pot-info (contract-of contract)) ERR_NOT_FOUND))
             (pot-contract (get pot-contract pot-detailes))
-            (is-audited (unwrap! (contract-call? .stackspot-audited-contracts is-audited-contract contract) ERR_NOT_FOUND))
+            (is-audited (unwrap!
+                (contract-call? .stackspot-audited-contracts is-audited-contract
+                    contract
+                )
+                ERR_NOT_FOUND
+            ))
         )
         (asserts! is-audited ERR_NOT_CONTRACT_AUDITED)
         (asserts! (is-eq pot-contract (contract-of contract)) ERR_UNAUTHORIZED)
         (asserts! (is-eq contract-caller (contract-of contract)) ERR_UNAUTHORIZED)
 
-        (try! (contract-call? .stackspot-distribute delegate-treasury contract delegate-to))
+        (try! (contract-call? .stackspot-distribute delegate-treasury contract
+            delegate-to
+        ))
         (ok true)
     )
 )
