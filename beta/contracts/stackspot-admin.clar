@@ -1,30 +1,47 @@
+(define-constant ERR_UNAUTHORIZED (err u1101))
 
-;; title: stackspot-admin
-;; version:
-;; summary:
-;; description:
+(define-map admins principal bool)
 
-;; traits
-;;
+(define-constant primary-admin tx-sender)
 
-;; token definitions
-;;
+(define-data-var public-pot-deploy bool true)
 
-;; constants
-;;
+(define-public (add-update-admin-status (admin principal) (enable bool)) 
+    (begin
+        (asserts! (is-eq tx-sender primary-admin) ERR_UNAUTHORIZED)
+        (map-set admins admin enable)
+        (print {
+            event: "admin added/updated",
+            admin: admin,
+            enable: enable,
+        })
+        (ok true)
+    )
+)
 
-;; data vars
-;;
+(define-public (update-public-pot-deploy-status (enable bool)) 
+    (begin
+        (asserts! (default-to false (map-get? admins tx-sender)) ERR_UNAUTHORIZED)
+        (var-set public-pot-deploy enable)
+        (print {
+            event: "public pot deploy status updated",
+            enable: enable,
+            admin: tx-sender
+        })
+        (ok true)
+    )
+)
 
-;; data maps
-;;
+(define-read-only (is-admin) 
+    (default-to false (map-get? admins tx-sender))
+)
 
-;; public functions
-;;
-
-;; read only functions
-;;
-
-;; private functions
-;;
-
+(define-read-only (can-deploy-pot) 
+   (let     
+        (
+            (caller-is-admin (default-to false (map-get? admins tx-sender)))
+            (is-public-pot-deploy-enabled (var-get public-pot-deploy))
+        )
+        (if caller-is-admin true is-public-pot-deploy-enabled)
+   )
+)

@@ -1,30 +1,227 @@
+(use-trait stackspot-trait .stackspot-trait.stackspot-trait)
 
-;; title: stackspot-distribute
-;; version:
-;; summary:
-;; description:
+;; --- Not Found
+(define-constant ERR_NOT_FOUND (err u1001))
+;; --- Authorization
+(define-constant ERR_UNAUTHORIZED (err u1101))
+(define-constant ERR_POT_CLAIM_NOT_REACHED (err u1402))
+(define-constant ERR_POOL_ENTRY_PASSED (err u1403))
+(define-constant ERR_INSUFFICIENT_POT_REWARD (err u1304))
 
-;; traits
-;;
+;; Platform Address
+(define-constant platform-address tx-sender)
 
-;; token definitions
-;;
+;; Get PoX Info and return pool config
+;; Testnet version
+(define-read-only (get-pox-info) (unwrap-panic (contract-call? 'ST11RGVR0CAWYKWPVKPHA20QDE5Z5N35BMY9BSR9Z.sim-pox-4 get-pox-info)))
+(define-read-only (get-pool-config) 
+    (let 
+        (
+            (pox-details (get-pox-info))
+            (cycle (get reward-cycle-id pox-details))
+            (first (get first-burnchain-block-height pox-details))
+            (cycle-len (get reward-cycle-length pox-details))
+            (prepare-len (get prepare-cycle-length pox-details))
+            (cycle-start (+ first (* cycle cycle-len)))
+            (next-cycle-start (+ first (* (+ cycle u1) cycle-len)))
+        )
+        (ok {
+            join-end: (- (- next-cycle-start prepare-len) u300),
+            prepare-start: (- next-cycle-start prepare-len),
+            cycle-end: next-cycle-start,
+            reward-release: (+ next-cycle-start u432)
+        })
+    )
+)
 
-;; constants
-;;
+;; pot Join Stop validation
+(define-read-only (validate-can-pool-pot) 
+    (let 
+        (
+            (pool-config (unwrap! (get-pool-config) false))
+            (join-end (get join-end pool-config))
+        ) 
+       (asserts! (< burn-block-height join-end) false)
+       true
+    )
+)
 
-;; data vars
-;;
+;; ;; Pot Claim Start validation
+(define-read-only (validate-can-claim-pot) 
+    (let 
+        (
+            (pool-config (unwrap! (get-pool-config) false))
+            (reward-release (get reward-release pool-config))
+        ) 
+       (asserts! (> burn-block-height reward-release) false)
+       true
+    )
+)
 
-;; data maps
-;;
+;; ;; Private helper function that returns participant principals
+(define-private (return-participant-principals (participant-value (optional {participant: principal, amount: uint})) (result (response bool uint)))
+    (let 
+        (
+            (participant (unwrap! (get participant participant-value) ERR_NOT_FOUND))
+            (principal-amount (unwrap! (get amount participant-value) ERR_NOT_FOUND))
+        )
+        (try! (stx-transfer-memo? principal-amount tx-sender participant
+            (unwrap! (to-consensus-buff? "participant principal") ERR_NOT_FOUND)
+        ))
+        result
+    )
+)
 
-;; public functions
-;;
+(define-public (dispatch-principals (contract <stackspot-trait>))
+    (let 
+        (
+            (pot-id (unwrap! (contract-call? contract get-pot-id) ERR_NOT_FOUND))
+            (pot-treasury (unwrap! (contract-call? contract get-pot-treasury) ERR_NOT_FOUND))
+            (participants (unwrap! (contract-call? contract get-pot-participants) ERR_NOT_FOUND))           
+        )
+        ;; Validate's if the pot treasury is the same as the pot treasury address
+        (asserts! (is-eq pot-treasury tx-sender) ERR_UNAUTHORIZED)
+        ;; Validate's if the contract caller is the allowed caller
+        (asserts! (is-eq contract-caller .stackspots) ERR_UNAUTHORIZED)
 
-;; read only functions
-;;
+        ;; ;; Dispatch participants principals
+        (try! (fold return-participant-principals participants (ok true)))
 
-;; private functions
-;;
+        ;; ;; ;; Print event
+        (print {
+            event: "dispatch-principals",
+            pot-id: pot-id,
+            participants: participants,
+            contract: pot-treasury,
+            pot-treasury: pot-treasury,
+            contract-caller: contract-caller,
+            tx-sender: tx-sender,
+        })
+        ;; Execution complete
+        (ok true)
+    )
+)
 
+(define-private (dispatch-rewards-with-sbtc (amount uint) (from principal) (to principal) (memo (optional (buff 32)))) 
+    (contract-call? 'SN69P7RZRKK8ERQCCABHT2JWKB2S4DHH9H74231T.sbtc-token transfer amount from to memo)
+)
+
+(define-public (dispatch-rewards (winner-values {participant: principal, amount: uint}) (contract <stackspot-trait>))
+    (let 
+        (
+            (pot-treasury (unwrap! (contract-call? contract get-pot-treasury) ERR_NOT_FOUND))
+            (pot-yeild (unwrap! (contract-call? 'SN69P7RZRKK8ERQCCABHT2JWKB2S4DHH9H74231T.sbtc-token get-balance pot-treasury) ERR_NOT_FOUND))
+
+            (pot-id (unwrap! (contract-call? contract get-pot-id) ERR_NOT_FOUND))
+
+            ;; Pot Fee
+            (pot-owner-address (unwrap! (contract-call? contract get-pot-admin) ERR_NOT_FOUND))
+            (pot-fee (* (/ pot-yeild u100) u5))
+
+            ;; Platform Royalty
+            (platform-royalty-address platform-address)
+            (platform-royalty-reward (* (/ pot-yeild u100) u1))
+
+            ;; Pot Starter Values
+            (pot-starter-address (unwrap! (unwrap! (contract-call? contract get-pot-starter-principal) ERR_NOT_FOUND) ERR_NOT_FOUND))
+            (pot-starter-reward (* (/ pot-yeild u100) u2))
+
+            ;; Claimer Values
+            (claimer-address (unwrap! (contract-call? contract get-pot-claimer-principal) ERR_NOT_FOUND))
+            (claimer-reward (* (/ pot-yeild u100) u2))
+
+            ;; Winner Values
+            (winner-address (get participant winner-values))
+            (winner-reward (* (/ pot-yeild u100) u90))
+        )
+        ;; Validate's if the pot claim is not reached
+        (asserts! (validate-can-claim-pot) ERR_POT_CLAIM_NOT_REACHED)
+        (asserts! (> pot-yeild u0) ERR_INSUFFICIENT_POT_REWARD)
+        ;; Validate's if the pot treasury is the same as the pot treasury address
+        (asserts! (is-eq pot-treasury tx-sender) ERR_UNAUTHORIZED)
+        ;; Validate's if the contract caller is the allowed caller
+        (asserts! (is-eq contract-caller .stackspots) ERR_UNAUTHORIZED)
+
+        ;; Dispatch platform royalty reward
+        (if (> platform-royalty-reward u0)
+            (begin 
+                (try! (dispatch-rewards-with-sbtc platform-royalty-reward pot-treasury platform-royalty-address (to-consensus-buff? "platform royalty reward")))
+                true
+            )
+            false
+        )
+
+        ;; Dispatch pot fee reward
+        (if (> pot-fee u0)
+            (begin 
+                (try! (dispatch-rewards-with-sbtc pot-fee pot-treasury pot-owner-address (to-consensus-buff? "pot fee reward")))
+                true
+            )
+            false
+        )
+        ;; Dispatch pot starter reward
+        (if (> pot-starter-reward u0)
+            (begin 
+                (try! (dispatch-rewards-with-sbtc pot-starter-reward pot-treasury pot-starter-address (to-consensus-buff? "pot starter reward")))
+                true
+            )
+            false
+        )
+
+        ;; ;; Dispatch claimer reward
+        (if (> claimer-reward u0)
+            (begin 
+                (try! (dispatch-rewards-with-sbtc claimer-reward pot-treasury claimer-address (to-consensus-buff? "claimer reward")))
+                true
+            )
+            false
+        )
+
+        ;; ;; Dispatch winner reward
+        (if (> winner-reward u0)
+            (begin 
+                (try! (dispatch-rewards-with-sbtc winner-reward pot-treasury winner-address (to-consensus-buff? "winner reward")))
+                true
+            )
+            false
+        )
+
+        ;; Print event
+        (print {
+            event: "dispatch-rewards",
+            pot-id: pot-id,
+            pot-starter-address: pot-starter-address,
+            pot-starter-reward: pot-starter-reward,
+            claimer-address: claimer-address,
+            claimer-reward: claimer-reward,
+            winner-address: winner-address,
+            winner-reward: winner-reward,
+            contract: contract,
+            pot-treasury: pot-treasury,
+            contract-caller: contract-caller,
+            tx-sender: tx-sender,
+        })
+        ;; Execution complete
+        (ok true)
+    )
+)
+
+(define-public (delegate-treasury (contract <stackspot-trait>) (delegate-to principal)) 
+    (let (
+            (treasury-address (unwrap! (contract-call? contract get-pot-treasury) ERR_NOT_FOUND))
+            (amount-ustx (stx-get-balance treasury-address))
+        )
+        ;; Validate's if the pool entry is passed
+        (asserts! (validate-can-pool-pot) ERR_POOL_ENTRY_PASSED)
+        ;; ;; Validate's if the pot treasury is the same as the pot treasury address
+        (asserts! (is-eq treasury-address tx-sender) ERR_UNAUTHORIZED)
+        ;; ;; Validate's if the contract caller is the allowed caller
+        (asserts! (is-eq contract-caller .stackspots) ERR_UNAUTHORIZED)
+
+        ;; Testnet version
+        (match (contract-call? 'ST11RGVR0CAWYKWPVKPHA20QDE5Z5N35BMY9BSR9Z.sim-pox4-multi-pool-v1 delegate-stx amount-ustx (unwrap! (to-consensus-buff? {c: "sbtc"}) ERR_NOT_FOUND))
+            ok (ok true)
+            error (err error)
+        )
+    )
+)
