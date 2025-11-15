@@ -45,11 +45,6 @@ path = 'contracts/stackspot-distribute.clar'
 clarity_version = 3
 epoch = 3.1
 
-[contracts.stackspot-distribution-trait]
-path = 'contracts/stackspot-distribution-trait.clar'
-clarity_version = 3
-epoch = 3.1
-
 [contracts.stackspot-jackpot]
 path = 'contracts/stackspot-jackpot.clar'
 clarity_version = 3

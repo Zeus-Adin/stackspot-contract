@@ -103,35 +103,30 @@ plan:
             path: contracts/stackspot-trait.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: stackspot-audited-contracts
-            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/stackspot-audited-contracts.clar
-            clarity-version: 3
-        - emulated-contract-publish:
-            contract-name: stackspot-distribute
-            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/stackspot-distribute.clar
-            clarity-version: 3
-        - emulated-contract-publish:
-            contract-name: stackspot-distribution-trait
-            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/stackspot-distribution-trait.clar
-            clarity-version: 3
-        - emulated-contract-publish:
             contract-name: stackspot-vrf
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/stackspot-vrf.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: stackspot-winners
+            contract-name: stackspot-audited-contracts
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/stackspot-winners.clar
-            clarity-version: 3        
+            path: contracts/stackspot-audited-contracts.clar
+            clarity-version: 3
         - emulated-contract-publish:
             contract-name: stackspot-registry
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/stackspot-registry.clar
             clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: stackspot-winners
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/stackspot-winners.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: stackspot-distribute
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/stackspot-distribute.clar
+            clarity-version: 3              
         - emulated-contract-publish:
             contract-name: stackspots
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
