@@ -8,7 +8,7 @@
 (define-constant ERR_POOL_ENTRY_PASSED (err u1403))
 (define-constant ERR_INSUFFICIENT_POT_REWARD (err u1304))
 (define-constant ERR_DISPATCH_FAILED (err u1108))
-(define-constant ERR_LOG_FAILED (err u1109))
+(define-constant ERR_LOG_FAILED (err u1107))
 ;; Platform Address
 (define-constant platform-address tx-sender)
 

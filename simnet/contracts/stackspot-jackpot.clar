@@ -21,7 +21,7 @@
 (define-constant ERR_POT_ALREADY_STARTED (err u1404))
 (define-constant ERR_MAX_PARTICIPANTS_REACHED (err u1405))
 (define-constant ERR_DELEGATE_FAILED (err u1406))
-(define-constant ERR_DISPATCH_FAILED (err u1407))
+(define-constant ERR_DISPATCH_FAILED (err u1108))
 (define-constant ERR_POT_JOIN_FAILED (err u1408))
 
 ;; Pot Starter Principal

@@ -1,7 +1,7 @@
 ;; sBTC Registry contract
 
 ;; Error codes
-(define-constant ERR_UNAUTHORIZED (err u400))
+(define-constant ERR_UNAUTHORIZED (err u1101))
 (define-constant ERR_INVALID_REQUEST_ID (err u401))
 (define-constant ERR_AGG_PUBKEY_REPLAY (err u402))
 
