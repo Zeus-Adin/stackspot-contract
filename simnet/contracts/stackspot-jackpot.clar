@@ -63,6 +63,7 @@
             origin-contract-sha-hash: origin-contract-sha-hash,
             stacks-block-height: stacks-block-height,
             burn-block-height: burn-block-height,
+            pool-config: (unwrap! (get-pool-config) ERR_NOT_FOUND),
         }
     )
 )
@@ -418,8 +419,4 @@
 (define-constant pot-type "StackSpot Jackpot")
 (define-constant origin-contract-sha-hash "5c15e5196a9c0afb580a242fbafd41cee6d4fcf5f196d3b2fdc92d7ca30e2bba")
 ;; Register pot
-(contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots register-pot {owner: tx-sender, contract: (as-contract tx-sender), cycles: u1, type: pot-type, pot-reward-token: "sbtc", min-amount: u100, max-participants: u100, contract-sha-hash: origin-contract-sha-hash})
-
-;; (define-public (register-pot) 
-;;     (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots register-pot {owner: tx-sender, contract: (as-contract tx-sender), cycles: u1, type: pot-type, pot-reward-token: "sbtc", min-amount: u100, max-participants: u100, contract-sha-hash: origin-contract-sha-hash})
-;; )
+(contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots register-pot {owner: tx-sender, contract: (as-contract tx-sender), cycles: pot-cycle, type: pot-type, pot-reward-token: "sbtc", min-amount: pot-min-amount, max-participants: pot-max-participants, contract-sha-hash: origin-contract-sha-hash})

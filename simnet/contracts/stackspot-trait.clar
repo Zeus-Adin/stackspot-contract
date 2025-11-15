@@ -35,7 +35,13 @@
                 ;; ;; Pot Origination Values
                 origin-contract-sha-hash: (string-ascii 255),
                 stacks-block-height: uint,
-                burn-block-height: uint
+                burn-block-height: uint,
+                pool-config: {
+                    join-end: uint,
+                    prepare-start: uint,
+                    cycle-end: uint,
+                    reward-release: uint,
+                }
             }            
 
             uint          
