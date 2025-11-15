@@ -1,4 +1,4 @@
-# StackSpot Contracts
+# 🚀 StackSpot Contracts
 
 StackSpot is a lottery-style staking platform for Stacks that coordinates STX delegation, sBTC yield-sharing, and on-chain logging. This repository contains two Clarinet workspaces:
 
@@ -9,7 +9,7 @@ The sections below document every contract that ships inside `simnet/contracts` 
 
 ---
 
-## Project Summary
+## 🎯 Project Summary
 
 StackSpot orchestrates decentralized “pots” (jackpot-style investment pools) where participants contribute STX, delegate those funds into PoX cycles to earn BTC-denominated yield (paid in sBTC), and later share the proceeds according to on-chain, auditable rules. Every pot is represented by a non-transferable NFT in the `stackspots` registry, gated by an admin/audit layer, and instrumented with extensive logging so operators can trace deployments, reward claims, and participant refunds.
 
@@ -30,7 +30,7 @@ StackSpot orchestrates decentralized “pots” (jackpot-style investment pools)
 
 ---
 
-## Repository Map
+## 🗺️ Repository Map
 
 ```
 stackspot-contracts/
@@ -51,11 +51,11 @@ Use absolute paths (e.g. `/mnt/d/.../simnet/contracts/stackspots.clar`) when scr
 
 ---
 
-## Simnet Contract Suite
+## 🧩 Simnet Contract Suite
 
-### Platform Governance & Registry Layer
+### 🛡️ Platform Governance & Registry Layer
 
-#### `stackspot-admin.clar`
+#### 🧑‍✈️ `stackspot-admin.clar`
 - **Purpose**: Maintains the allow-list of platform administrators and toggles whether public users can deploy pots.
 - **Key state**: `admins` map, `public-pot-deploy` flag, implicit `primary-admin` (set to deployer).
 - **Important entrypoints**:
@@ -63,13 +63,13 @@ Use absolute paths (e.g. `/mnt/d/.../simnet/contracts/stackspots.clar`) when scr
   - `update-public-pot-deploy-status(bool)` – flip the public deployment gate; requires existing admin.
   - `is-admin()` and `can-deploy-pot()` read-only helpers consumed by other contracts (e.g., `stackspots`, `stackspot-audited-contracts`).
 
-#### `stackspot-audited-contracts.clar`
+#### ✅ `stackspot-audited-contracts.clar`
 - **Purpose**: Tracks which pot contracts passed audits before they can distribute rewards or delegate treasury control.
 - **Flow**:
   - Admins (validated via `stackspot-admin`) call `update-audited-contract(<stackspot-trait>, bool)` or `remove-audited-contract`.
   - Consumers such as `stackspots` and `stackspot-distribute` require `is-audited-contract` to be true before dispatching rewards or delegating pooled STX.
 
-#### `stackspots.clar`
+#### 🪙 `stackspots.clar`
 - **Role**: NFT-based registry for every pot contract deployed on StackSpot.
 - **Highlights**:
   - Implements SIP-009 NFT `stackpot-pot`.
@@ -77,24 +77,24 @@ Use absolute paths (e.g. `/mnt/d/.../simnet/contracts/stackspots.clar`) when scr
   - `mint(principal)` is fee-gated and non-transferable – NFT ownership encodes pot identity and enforces a single contract per pot.
   - Dispatch helpers (`dispatch-principals`, `dispatch-rewards`, `delegate-treasury`) enforce that only the registered pot contract can trigger settlement routines in `stackspot-distribute`.
 
-#### `stackspot-registry.clar`
+#### 📓 `stackspot-registry.clar`
 - **Purpose**: Thin logging shim invoked by `stackspots` to emit pot-level telemetry (`log-pot`).
 - **Security**: Accepts calls only from the `stackspots` contract and prints structured pot data for off-chain ingestion.
 
-#### `stackspot-winners.clar`
+#### 🏆 `stackspot-winners.clar`
 - **Purpose**: Persists settlement telemetry each time rewards are dispatched.
 - **Entry point**: `log-winner(buff)` – callable solely by `stackspot-distribute`; prints the encoded reward breakdown that includes participants, yields, claimer/starter splits, and cycle metadata.
 
 ---
 
-### Pot Implementation & Runtime Helpers
+### 🌀 Pot Implementation & Runtime Helpers
 
-#### `stackspot-trait.clar`
+#### 🔐 `stackspot-trait.clar`
 - **Description**: Trait that every StackSpot-compatible pot must implement.
 - **Surface area**: Read-only getters for admin, treasury, participants, yield, configuration (cycle timings, token info, min/max contributions) plus helpers (`get-by-id-helper`, `get-pot-details`, etc.).
 - **Usage**: Enforced by `stackspots`, `stackspot-distribute`, and `stackspot-audited-contracts` to keep pot contracts interchangeable.
 
-#### `stackspot-jackpot.clar`
+#### 🎲 `stackspot-jackpot.clar`
 - **Role**: Reference pot implementation that manages the full jackpot lifecycle (join, lock, delegate to pools, and payout).
 - **Key mechanics**:
   - Tracks participant slots via `pot-participants-by-*` maps and enforces uniqueness, balance checks, min/max thresholds, and join window locking (`locked` flag).
@@ -103,7 +103,7 @@ Use absolute paths (e.g. `/mnt/d/.../simnet/contracts/stackspots.clar`) when scr
   - `claim-pot-reward(<stackspot-trait>)` orchestrates: compute VRF winner → refund principals via `stackspots.dispatch-principals` → trigger reward distribution → emit full round telemetry.
   - Config constants (min amount, max participants, cycle info, contract hash) live at the foot of the file and are registered with `stackspots` on deploy.
 
-#### `stackspot-distribute.clar`
+#### 💸 `stackspot-distribute.clar`
 - **Purpose**: Treasury operations contract responsible for refunding principals, splitting sBTC rewards, and delegating pooled STX into PoX.
 - **Notable entrypoints**:
   - `dispatch-principals(<stackspot-trait>)` – called by `stackspots`; iterates over participants and transfers their principal using STX memos for provenance. Validates pot treasury ownership and caller.
@@ -111,7 +111,7 @@ Use absolute paths (e.g. `/mnt/d/.../simnet/contracts/stackspots.clar`) when scr
   - `delegate-treasury(<stackspot-trait>, principal)` – during the join window, allows audited pots to signal delegation into PoX pools (wiring to `sim-pox4-multi-pool-v1` when uncommented).
   - Auxiliary read-onlys `get-pool-config`, `validate-can-pool-pot`, and `validate-can-claim-pot` are derived from `sim-pox-4`.
 
-#### `stackspot-vrf.clar`
+#### 🎯 `stackspot-vrf.clar`
 - **Functionality**: Burn-block-anchored VRF harness used both directly (e.g., `stackspot-jackpot`) and by helper contracts.
 - **Workflow**:
   1. Fetch burn header hash (`get-burn-block-info?`).
@@ -121,7 +121,7 @@ Use absolute paths (e.g. `/mnt/d/.../simnet/contracts/stackspots.clar`) when scr
 
 ---
 
-### sBTC & PoX Dependencies (Support Contracts)
+### 🔗 sBTC & PoX Dependencies (Support Contracts)
 
 These contracts are not considered StackSpot core logic but are necessary dependencies for simnet execution. Be brief when referencing them in other docs; summarize only the essentials.
 
@@ -134,7 +134,7 @@ Although these four files live beside the StackSpot suite, they should be descri
 
 ---
 
-## Beta Contracts (Deployment Prep)
+## 🧪 Beta Contracts (Deployment Prep)
 
 The `beta/contracts` directory contains trimmed copies of the StackSpot contracts (admin, audited-contracts, distribute, trait, vrf, winners, stackspots, and `stackspot-registery.clar`, which is the same logger with a historical spelling). They exist so we can stage Clarinet projects for bulk deployment on testnet:
 
@@ -143,7 +143,7 @@ The `beta/contracts` directory contains trimmed copies of the StackSpot contract
 
 ---
 
-## System Workflow Recap
+## 🔄 System Workflow Recap
 
 1. **Deployment**
    - Admins register audited pot contracts through `stackspots.register-pot`, which mints a non-transferable NFT and records metadata in `stackspot-registry`.
@@ -158,7 +158,7 @@ The `beta/contracts` directory contains trimmed copies of the StackSpot contract
 
 ---
 
-## Development & Testing
+## 🛠️ Development & Testing
 
 The Clarinet workspace under `simnet/` holds TypeScript tests (Vitest) that cover the jackpot flow, registry logging, VRF outputs, and PoX integrations. Typical workflow:
 
@@ -177,7 +177,7 @@ When preparing a testnet release:
 
 ---
 
-## Security Notes
+## 🔐 Security Notes
 
 - **Access Control**: All state-changing calls check either `tx-sender` or `contract-caller` against admin lists, audited registries, or pot ownership.
 - **Funds Safety**: Principal refunds use memoized STX transfers for traceability, and rewards are split only after verifying sufficient sBTC balances.
@@ -186,6 +186,6 @@ When preparing a testnet release:
 
 ---
 
-## License & Contributions
+## 📜 License & Contributions
 
-Licensed under ISC. Pull requests are welcome—run both Clarinet and Vitest test suites before submitting, and keep README updates aligned with the simnet contract sources.
+Licensed under GPL-3.0. Pull requests are welcome—run both Clarinet and Vitest test suites before submitting, and keep README updates aligned with the simnet contract sources.
