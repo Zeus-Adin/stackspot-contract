@@ -36,6 +36,9 @@
 (define-map pot-participants-by-principal principal uint)
 (define-map pot-participants-by-id uint {participant: principal, amount: uint})
 
+;; Locking Mechanism To Prevent Participants From Trying To Join The Pot While The Pot Is Stacked In Pool
+(define-data-var locked bool false)
+
 ;; Get PoX Info and return pool config
 (define-read-only (get-pox-info)
     (unwrap-panic (contract-call? 'ST11RGVR0CAWYKWPVKPHA20QDE5Z5N35BMY9BSR9Z.sim-pox-4 get-pox-info))
@@ -120,8 +123,6 @@
     )
 )
 
-;; Locking Mechanism To Prevent Participants From Trying To Join The Pot While The Pot Is Stacked In Pool
-(define-data-var locked bool false)
 (define-read-only (is-locked)
     (var-get locked)
 )
