@@ -113,13 +113,13 @@
 
             (pot-details (unwrap! (contract-call? contract get-pot-details) ERR_NOT_FOUND))
 
-            (pot-treasury (get pot-address pot-details))
+            (pot-treasury (unwrap! (contract-call? contract get-pot-treasury) ERR_NOT_FOUND))
             (pot-yeild (unwrap! (contract-call? 'SN69P7RZRKK8ERQCCABHT2JWKB2S4DHH9H74231T.sbtc-token get-balance pot-treasury) ERR_NOT_FOUND))
 
-            (pot-id (get pot-id pot-details))
+            (pot-id (unwrap! (contract-call? contract get-pot-id) ERR_NOT_FOUND))
 
             ;; Pot Fee
-            (pot-owner-address (get pot-owner pot-details))
+            (pot-owner-address (unwrap! (contract-call? contract get-pot-admin) ERR_NOT_FOUND))
             (pot-fee (* (/ pot-yeild u100) u5))
 
             ;; Platform Royalty
@@ -198,7 +198,7 @@
                 event: "claim-pot-reward",
                 ;; Pot Round Values
                 pot-participants-count: (get pot-participants-count pot-details), 
-                pot-participants: (get pot-participants pot-details),
+                pot-participants: (unwrap! (contract-call? contract get-pot-participants) ERR_NOT_FOUND),
                 pot-value: (get pot-value pot-details),
                 pot-yield-amount: pot-yeild,
                 ;; Winner Values
@@ -214,16 +214,16 @@
                 pot-address: pot-treasury,
                 pot-owner: pot-owner-address,                
                 ;; Pot Config Values
-                pot-name: (get pot-name pot-details),
-                pot-type: (get pot-type pot-details),
-                pot-cycle: (get pot-cycle pot-details),
-                pot-reward-token: (get pot-reward-token pot-details),
-                pot-min-amount: (get pot-min-amount pot-details),
-                pot-max-participants: (get pot-max-participants pot-details),
+                pot-name: (unwrap! (contract-call? contract get-pot-name) ERR_NOT_FOUND),
+                pot-type: (unwrap! (contract-call? contract get-pot-type) ERR_NOT_FOUND),
+                pot-cycle: (unwrap! (contract-call? contract get-pot-cycle) ERR_NOT_FOUND),
+                pot-reward-token: (unwrap! (contract-call? contract get-pot-reward-token) ERR_NOT_FOUND),
+                pot-min-amount: (unwrap! (contract-call? contract get-pot-min-amount) ERR_NOT_FOUND),
+                pot-max-participants: (unwrap! (contract-call? contract get-pot-max-participants) ERR_NOT_FOUND),
                 ;; Pot Origination Values
-                origin-contract-sha-hash: (get origin-contract-sha-hash pot-details),
-                stacks-block-height: (get stacks-block-height pot-details),
-                burn-block-height: (get burn-block-height pot-details)        
+                origin-contract-sha-hash: (unwrap! (contract-call? contract get-pot-origin-contract-sha-hash) ERR_NOT_FOUND),
+                stacks-block-height: stacks-block-height,
+                burn-block-height: burn-block-height        
             }
         ) ERR_NOT_FOUND))) 
             ERR_LOG_FAILED

@@ -4,7 +4,7 @@
 
 (define-constant primary-admin tx-sender)
 
-(define-data-var public-pot-deploy bool true)
+(define-data-var public-pot-deploy bool false)
 
 (define-public (add-update-admin-status (admin principal) (enable bool)) 
     (begin

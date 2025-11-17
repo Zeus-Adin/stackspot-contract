@@ -7,17 +7,17 @@ bitcoin-node: "http://blockstack:blockstacksystem@bitcoind.testnet.stacks.co:183
 plan:
   batches:
     - id: 0
-      transactions:       
+      transactions:        
         - contract-publish:
             contract-name: stackspot-distribute
-            expected-sender: ST2P4GYVZANKJ5A09C77T8MJDYQP1N3HVXVHHYRAF
-            cost: 111590
+            expected-sender: ST1YQ9DV7TYE1KX9EC4BDVAH09M9F4F9WARS4VM0M
+            cost: 115240
             path: contracts/stackspot-distribute.clar
             anchor-block-only: true
-            clarity-version: 3
+            clarity-version: 3        
         - contract-publish:
             contract-name: stackspots
-            expected-sender: ST2P4GYVZANKJ5A09C77T8MJDYQP1N3HVXVHHYRAF
+            expected-sender: ST1YQ9DV7TYE1KX9EC4BDVAH09M9F4F9WARS4VM0M
             cost: 105550
             path: contracts/stackspots.clar
             anchor-block-only: true
