@@ -9,15 +9,57 @@ plan:
     - id: 0
       transactions:        
         - contract-publish:
+            contract-name: stackspot-admin
+            expected-sender: ST38M0KHQP7XTHDZ1CPS6KP3489RW0YPW6PGTX111
+            cost: 12550
+            path: contracts/stackspot-admin.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: stackspot-trait
+            expected-sender: ST38M0KHQP7XTHDZ1CPS6KP3489RW0YPW6PGTX111
+            cost: 19540
+            path: contracts/stackspot-trait.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: stackspot-audited-contracts
+            expected-sender: ST38M0KHQP7XTHDZ1CPS6KP3489RW0YPW6PGTX111
+            cost: 8430
+            path: contracts/stackspot-audited-contracts.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: stackspot-winners
+            expected-sender: ST38M0KHQP7XTHDZ1CPS6KP3489RW0YPW6PGTX111
+            cost: 2980
+            path: contracts/stackspot-winners.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
             contract-name: stackspot-distribute
-            expected-sender: ST1YQ9DV7TYE1KX9EC4BDVAH09M9F4F9WARS4VM0M
+            expected-sender: ST38M0KHQP7XTHDZ1CPS6KP3489RW0YPW6PGTX111
             cost: 115240
             path: contracts/stackspot-distribute.clar
             anchor-block-only: true
-            clarity-version: 3        
+            clarity-version: 3
+        - contract-publish:
+            contract-name: stackspot-registery
+            expected-sender: ST38M0KHQP7XTHDZ1CPS6KP3489RW0YPW6PGTX111
+            cost: 2960
+            path: contracts/stackspot-registery.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: stackspot-vrf
+            expected-sender: ST38M0KHQP7XTHDZ1CPS6KP3489RW0YPW6PGTX111
+            cost: 53360
+            path: contracts/stackspot-vrf.clar
+            anchor-block-only: true
+            clarity-version: 3
         - contract-publish:
             contract-name: stackspots
-            expected-sender: ST1YQ9DV7TYE1KX9EC4BDVAH09M9F4F9WARS4VM0M
+            expected-sender: ST38M0KHQP7XTHDZ1CPS6KP3489RW0YPW6PGTX111
             cost: 105550
             path: contracts/stackspots.clar
             anchor-block-only: true
