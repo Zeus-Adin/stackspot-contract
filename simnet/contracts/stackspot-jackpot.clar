@@ -36,54 +36,8 @@
 (define-map pot-participants-by-principal principal uint)
 (define-map pot-participants-by-id uint {participant: principal, amount: uint})
 
-(define-read-only (get-pot-details) 
-    (ok 
-        {
-            pot-participants-count: (var-get last-participant),
-            pot-participants: (unwrap! (get-pot-participants) ERR_NOT_FOUND),
-            pot-value: (var-get total-pot-value),
-            ;; Winner Values
-            winners-values: (var-get winners-values),
-            ;; Starter Values
-            pot-starter-address: (var-get pot-starter-principal),
-            ;; Claimer Values
-            pot-claimer-address: (var-get pot-claimer-principal),
-            ;; Pot Values
-            pot-id: (unwrap! (get-pot-id) ERR_NOT_FOUND),
-            pot-address: pot-treasury-address,
-            pot-owner: pot-admin,
-            ;; Pot Config Values
-            pot-name: pot-name,
-            pot-type: pot-type,
-            pot-cycle: pot-cycle,
-            pot-reward-token: "sbtc",
-            pot-min-amount: pot-min-amount,
-            pot-max-participants: pot-max-participants,
-            ;; Pot Origination Values
-            origin-contract-sha-hash: origin-contract-sha-hash,
-            stacks-block-height: stacks-block-height,
-            burn-block-height: burn-block-height,
-            pool-config: (unwrap! (get-pool-config) ERR_NOT_FOUND),
-        }
-    )
-)
-
-;; Total Max Participants
-;; Platform Address
-;; Pot Treasury Address
-(define-constant total-max-participants u1001)
-(define-constant platform-address (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots get-platform-treasury))
-
-(define-constant pot-treasury-address (as-contract tx-sender))
-(define-read-only (get-pot-treasury)
-    (ok pot-treasury-address)
-)
-
-;; Pot Admin
-(define-constant pot-admin tx-sender)
-(define-read-only (get-pot-admin)
-    (ok pot-admin)
-)
+;; Locking Mechanism To Prevent Participants From Trying To Join The Pot While The Pot Is Stacked In Pool
+(define-data-var locked bool false)
 
 ;; Get PoX Info and return pool config
 (define-read-only (get-pox-info)
@@ -106,6 +60,41 @@
             reward-release: (+ next-cycle-start u432),
         })
     )
+)
+
+(define-read-only (get-pot-details) 
+    (ok 
+        {
+            pot-participants-count: (var-get last-participant),
+            pot-value: (var-get total-pot-value),
+            pot-reward-amount: (unwrap! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sbtc-token get-balance pot-treasury-address) ERR_NOT_FOUND),
+            ;; Winner Values
+            winners-values: (var-get winners-values),
+            ;; Starter Values
+            pot-starter-address: (var-get pot-starter-principal),
+            ;; Claimer Values
+            pot-claimer-address: (var-get pot-claimer-principal), 
+            pool-config: (unwrap! (get-pool-config) ERR_NOT_FOUND),
+            pot-locked: (var-get locked),
+        }
+    )
+)
+
+;; Total Max Participants
+;; Platform Address
+;; Pot Treasury Address
+(define-constant total-max-participants u100)
+(define-constant platform-address (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots get-platform-treasury))
+
+(define-constant pot-treasury-address (as-contract tx-sender))
+(define-read-only (get-pot-treasury)
+    (ok pot-treasury-address)
+)
+
+;; Pot Admin
+(define-constant pot-admin tx-sender)
+(define-read-only (get-pot-admin)
+    (ok pot-admin)
 )
 
 ;; pot Join Stop validation
@@ -135,8 +124,6 @@
     )
 )
 
-;; Locking Mechanism To Prevent Participants From Trying To Join The Pot While The Pot Is Stacked In Pool
-(define-data-var locked bool false)
 (define-read-only (is-locked)
     (var-get locked)
 )
@@ -340,10 +327,10 @@
             ;; @value: pot winner's {participant: principal, amount: uint}
             ;; @value: pot winner's principal
             ;; @value: pot winner's reward
-            (pot-id (get pot-id pot-details))
+            (pot-id (get-pot-id))
             (total-participants (get pot-participants-count pot-details))
 
-            (participants (get pot-participants pot-details)) ;; Get participants list            
+            (participants (unwrap! (get-pot-participants) ERR_NOT_FOUND)) ;; Get participants list            
             (stacked-reward (unwrap! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sbtc-token get-balance pot-treasury-address) ERR_NOT_FOUND)) ;; Get stacked reward
 
             (pot-winner-id (unwrap! (get-random-index total-participants) ERR_NOT_FOUND))
@@ -380,7 +367,7 @@
             ;; Pot Round Values
             pot-participants-count: total-participants, 
             pot-participants: participants,
-            pot-value: (get pot-value pot-details),
+            pot-value: (var-get total-pot-value),
             pot-yield-amount: stacked-reward,
             ;; Winner Values
             winners-values: (var-get winners-values),
@@ -392,24 +379,32 @@
             claimer-reward-amount: claimer-reward,
             ;; Pot Values
             pot-id: pot-id,
-            pot-address: (get pot-address pot-details),
-            pot-owner: (get pot-owner pot-details),
+            pot-address: pot-treasury-address,
+            pot-owner: pot-admin,
             ;; Pot Config Values
-            pot-name: (get pot-name pot-details),
-            pot-type: (get pot-type pot-details),
-            pot-cycle: (get pot-cycle pot-details),
-            pot-reward-token: (get pot-reward-token pot-details),
-            pot-min-amount: (get pot-min-amount pot-details),
-            pot-max-participants: (get pot-max-participants pot-details),
+            pot-name: pot-name,
+            pot-type: pot-type,
+            pot-cycle: pot-cycle,
+            pot-reward-token: "sbtc",
+            pot-min-amount: pot-min-amount,
+            pot-max-participants: pot-max-participants,
             ;; Pot Origination Values
-            origin-contract-sha-hash: (get origin-contract-sha-hash pot-details),
-            stacks-block-height: (get stacks-block-height pot-details),
-            burn-block-height: (get burn-block-height pot-details)
+            origin-contract-sha-hash: origin-contract-sha-hash,
+            stacks-block-height: stacks-block-height,
+            burn-block-height: burn-block-height
         })
         ;; Execution complete
         (ok true)
     )
 )
+
+(define-read-only (get-pot-cycle) (ok pot-cycle))
+(define-read-only (get-pot-min-amount) (ok pot-min-amount))
+(define-read-only (get-pot-max-participants) (ok pot-max-participants))
+(define-read-only (get-pot-name) (ok pot-name))
+(define-read-only (get-pot-type) (ok pot-type))
+(define-read-only (get-pot-origin-contract-sha-hash) (ok origin-contract-sha-hash))
+(define-read-only (get-pot-reward-token) (ok "sbtc"))
 
 ;; Pot Deployer Configuration
 (define-constant pot-cycle u1)
