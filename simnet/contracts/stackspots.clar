@@ -277,7 +277,7 @@
         (asserts! (is-eq pot-contract (contract-of contract)) ERR_UNAUTHORIZED)
         (asserts! (is-eq contract-caller (contract-of contract)) ERR_UNAUTHORIZED)
 
-        (asserts! (is-ok (contract-call? .stackspot-distribute delegate-treasury contract delegate-to)) ERR_DISPATCH_FAILED)
+        (try! (contract-call? .stackspot-distribute delegate-treasury contract delegate-to))
 
         (ok true)
     )

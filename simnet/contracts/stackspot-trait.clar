@@ -34,7 +34,8 @@
                     cycle-end: uint,
                     reward-release: uint
                 },
-                pot-locked: bool
+                pot-locked: bool,
+                pot-lock-burn-height: uint
             }            
 
             uint          
