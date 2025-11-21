@@ -32,7 +32,7 @@ describe("join-pot", () => {
       [Cl.uint(20000000), Cl.principal(address2)],
       address2
     );
-    expect(txReceipt.result).toBeErr(Cl.uint(1406)); // already joined
+    expect(txReceipt.result).toBeErr(Cl.uint(1104)); // already joined
   });
   it("tx sender required as argument", () => {
     let txReceipt = simnet.callPublicFn(
@@ -51,7 +51,7 @@ describe("join-pot", () => {
       [Cl.uint(1), Cl.principal(address2)],
       address2
     );
-    expect(txReceipt.result).toBeErr(Cl.uint(1406)); // below minimum
+    expect(txReceipt.result).toBeErr(Cl.uint(1302)); // below minimum
   });
 
   it("pot owner cannot join pot", () => {
@@ -61,7 +61,7 @@ describe("join-pot", () => {
       [Cl.uint(10000000), Cl.principal(address1)],
       address1
     );
-    expect(txReceipt.result).toBeErr(Cl.uint(1406)); // unauthorized participant (owner)
+    expect(txReceipt.result).toBeErr(Cl.uint(1101)); // unauthorized participant (owner)
   });
 
   it("platform address cannot join pot", () => {
@@ -73,7 +73,7 @@ describe("join-pot", () => {
       [Cl.uint(10000000), Cl.principal(platformAddress)],
       platformAddress
     );
-    expect(txReceipt.result).toBeErr(Cl.uint(1406)); // unauthorized participant (platform)
+    expect(txReceipt.result).toBeErr(Cl.uint(1101)); // unauthorized participant (platform)
   });
 
   it("pot treasury address cannot join pot", () => {
@@ -109,6 +109,6 @@ describe("join-pot", () => {
       [Cl.uint(100000), Cl.principal(address2)],
       address2
     );
-    expect(txReceipt.result).toBeErr(Cl.uint(1406)); // insufficient balance
+    expect(txReceipt.result).toBeErr(Cl.uint(1408)); // insufficient balance
   });
 });

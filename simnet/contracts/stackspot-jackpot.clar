@@ -234,7 +234,7 @@
             ERR_MAX_PARTICIPANTS_REACHED
         )
         (asserts!
-            (not (is-some (map-get? pot-participants-by-principal participant)))
+            (is-none (map-get? pot-participants-by-principal participant))
             ERR_DUPLICATE_PARTICIPANT
         )
 
@@ -276,7 +276,7 @@
         (asserts! (> amount u0) ERR_INSUFFICIENT_AMOUNT)
         (asserts! (is-eq tx-sender participant) ERR_PARTICIPANT_ONLY)
 
-        (asserts! (is-ok (delegate-to-pot amount participant)) ERR_DELEGATE_FAILED)
+        (try! (delegate-to-pot amount participant))
 
         (ok true)
     )
