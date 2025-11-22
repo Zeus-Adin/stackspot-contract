@@ -204,11 +204,8 @@
             (pot-admin-buff (unwrap! (to-consensus-buff? pot-admin) ERR_NOT_FOUND))
             (merged-buff (concat sender-buff pot-admin-buff))
             (merged-sha256 (sha256 merged-buff))
-            (merged-sha256-uint (buff-to-uint-le (contract-call?
-                'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspot-vrf
-                lower-16-le merged-sha256
-            )))
-            (vrf-random-digit (unwrap! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspot-vrf get-random-uint-at-block burn-block-height) ERR_NOT_FOUND))
+            (merged-sha256-uint (buff-to-uint-le (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspot-vrf lower-16-le merged-sha256)))
+            (vrf-random-digit (unwrap! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspot-vrf get-random-uint-at-block stacks-block-height) ERR_NOT_FOUND))
         )
         (ok (mod vrf-random-digit participant-count))
     )

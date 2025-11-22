@@ -8,18 +8,15 @@ importers:
 
   .:
     dependencies:
-      '@hirosystems/clarinet-sdk':
-        specifier: ^3.8.1
-        version: 3.8.1
+      '@stacks/clarinet-sdk':
+        specifier: ^3.10.0
+        version: 3.10.0
       '@stacks/transactions':
         specifier: ^7.3.0
         version: 7.3.0
       chokidar-cli:
         specifier: ^3.0.0
         version: 3.0.0
-      fs:
-        specifier: 0.0.1-security
-        version: 0.0.1-security
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -190,15 +187,6 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
-
-  '@hirosystems/clarinet-sdk-wasm@3.8.1':
-    resolution: {integrity: sha512-Eat1Jjc11WgRWn2A4r3uDCIUciv9xaftW55R8kRNyans4ewoPS/s0j0i2EJS/F37sAHCsEejGI4wj3RjzGtrHw==}
-    deprecated: The Clarinet SDK has been moved to @stacks/clarinet-sdk-wasm
-
-  '@hirosystems/clarinet-sdk@3.8.1':
-    resolution: {integrity: sha512-CFD8lLaqHI4Lht2rEkmyoHhBpLNVs0lBc5UtBrpVAglpUSCMkLNfVLSSIeBi07zpfkjJTVmJHLP36FVXr4vfMA==}
-    engines: {node: '>=18.0.0'}
-    deprecated: The Clarinet SDK has been moved to @stacks/clarinet-sdk
 
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
@@ -502,9 +490,6 @@ packages:
   find-up@3.0.0:
     resolution: {integrity: sha512-1yD6RmLI1XBfxugvORwlck6f75tYL+iR0jqwsOrOxMZyGYqUuDhJ0l4AXdO1iX/FTs9cBAMEk1gWSEx1kSbylg==}
     engines: {node: '>=6'}
-
-  fs@0.0.1-security:
-    resolution: {integrity: sha512-3XY9e1pP0CVEUCdj5BmfIZxRBTSDycnbqhIOGec9QYtmVH2fbLpj86CFWkrNOkt/Fvty4KZG5lTglL9j/gJ87w==}
 
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
@@ -908,18 +893,6 @@ snapshots:
   '@esbuild/win32-x64@0.25.12':
     optional: true
 
-  '@hirosystems/clarinet-sdk-wasm@3.8.1': {}
-
-  '@hirosystems/clarinet-sdk@3.8.1':
-    dependencies:
-      '@hirosystems/clarinet-sdk-wasm': 3.8.1
-      '@stacks/transactions': 7.3.0
-      kolorist: 1.8.0
-      prompts: 2.4.2
-      yargs: 18.0.0
-    transitivePeerDependencies:
-      - encoding
-
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
   '@noble/hashes@1.1.5': {}
@@ -1211,8 +1184,6 @@ snapshots:
   find-up@3.0.0:
     dependencies:
       locate-path: 3.0.0
-
-  fs@0.0.1-security: {}
 
   fsevents@2.3.3:
     optional: true
