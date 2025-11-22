@@ -69,6 +69,7 @@
             pot-participants-count: (var-get last-participant),
             pot-value: (var-get total-pot-value),
             pot-reward-amount: (unwrap! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sbtc-token get-balance pot-treasury-address) ERR_NOT_FOUND),
+            pot-participant-values: (get-pot-participant-values tx-sender),
             ;; Winner Values
             winners-values: (var-get winners-values),
             ;; Starter Values
@@ -164,6 +165,10 @@
 )
 (define-read-only (get-by-id-helper-private (n uint))
     (map-get? pot-participants-by-id n)
+)
+
+(define-read-only (get-pot-participant-values (participant principal))    
+    (map-get? pot-participants-by-id (default-to u0 (map-get? pot-participants-by-principal participant)))    
 )
 
 ;; Read-Only public function that gets all participants

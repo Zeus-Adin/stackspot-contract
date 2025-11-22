@@ -138,7 +138,7 @@ plan:
             clarity-version: 3
         - emulated-contract-publish:
             contract-name: stackspot-jackpot
-            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            emulated-sender: ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5
             path: contracts/stackspot-jackpot.clar
             clarity-version: 3
       epoch: "3.1"
