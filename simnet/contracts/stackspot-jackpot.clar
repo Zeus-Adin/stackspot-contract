@@ -63,6 +63,36 @@
     )
 )
 
+;; pot Join Stop validation
+(define-read-only (validate-can-pool-pot)
+    (let (
+            (pool-config (unwrap! (get-pool-config) false))
+            (join-end (get join-end pool-config))
+        )
+        (asserts! (< burn-block-height join-end) false)
+        true
+    )
+)
+
+;; Pot Join Start validation
+(define-read-only (validate-can-join-pot)
+    (var-get locked)
+)
+
+;; Pot Claim Start validation
+(define-read-only (validate-can-claim-pot)
+    (let (
+            (pool-config (unwrap! (get-pool-config) false))
+            (reward-release (get reward-release pool-config))
+        )
+        (asserts! (> burn-block-height reward-release) false)
+    )
+)
+
+(define-read-only (is-locked)
+    (var-get locked)
+)
+
 (define-read-only (get-pot-details)
     (ok
         {
@@ -98,36 +128,6 @@
 (define-constant pot-admin tx-sender)
 (define-read-only (get-pot-admin)
     (ok pot-admin)
-)
-
-;; pot Join Stop validation
-(define-read-only (validate-can-pool-pot)
-    (let (
-            (pool-config (unwrap! (get-pool-config) false))
-            (join-end (get join-end pool-config))
-        )
-        (asserts! (< burn-block-height join-end) false)
-        true
-    )
-)
-
-;; Pot Join Start validation
-(define-read-only (validate-can-join-pot)
-    (var-get locked)
-)
-
-;; Pot Claim Start validation
-(define-read-only (validate-can-claim-pot)
-    (let (
-            (pool-config (unwrap! (get-pool-config) false))
-            (reward-release (get reward-release pool-config))
-        )
-        (asserts! (> burn-block-height reward-release) false)
-    )
-)
-
-(define-read-only (is-locked)
-    (var-get locked)
 )
 
 ;; Last Participant Indexed In The Pot Participants By Id Map
@@ -360,7 +360,7 @@
         (var-set winners-values (some {winner-id: pot-winner-id, winner-address: winner}))
 
         ;; Returns participants principals
-        (asserts! (is-ok (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots dispatch-principals pot-contract))) ERR_DISPATCH_FAILED)
+        (try! (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots dispatch-principals pot-contract)))
 
         ;; Disburse rewards
         (asserts! (is-ok (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots dispatch-rewards pot-contract))) ERR_DISPATCH_FAILED)
@@ -411,6 +411,9 @@
 (define-read-only (get-pot-origin-contract-sha-hash) (ok origin-contract-sha-hash))
 (define-read-only (get-pot-reward-token) (ok "sbtc"))
 
+(as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sim-pox4-multi-pool-v1 allow-contract-caller 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspot-distribute none))
+(as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sim-pox-4 allow-contract-caller 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sim-pox4-multi-pool-v1 none))
+
 ;; Pot Deployer Configuration
 (define-constant pot-cycle u1)
 (define-constant pot-min-amount u100)
@@ -420,6 +423,3 @@
 (define-constant origin-contract-sha-hash "5c15e5196a9c0afb580a242fbafd41cee6d4fcf5f196d3b2fdc92d7ca30e2bba")
 ;; Register pot
 (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots register-pot {owner: tx-sender, contract: (as-contract tx-sender), cycles: pot-cycle, type: pot-type, pot-reward-token: "sbtc", min-amount: pot-min-amount, max-participants: pot-max-participants, contract-sha-hash: origin-contract-sha-hash})
-
-(as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sim-pox4-multi-pool-v1 allow-contract-caller 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspot-distribute none))
-(as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sim-pox-4 allow-contract-caller 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sim-pox4-multi-pool-v1 none))
