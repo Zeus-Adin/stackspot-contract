@@ -18,6 +18,8 @@
             {
                 pot-participants-count: uint,
                 pot-value: uint,
+                pot-reward-amount: uint,
+                pot-participant-values: (optional {participant: principal, amount: uint}),
                 ;; ;; Winner Values
                 winners-values: (optional {
                     winner-id: uint,
@@ -33,7 +35,8 @@
                     cycle-end: uint,
                     reward-release: uint
                 },
-                pot-locked: bool
+                pot-locked: bool,
+                pot-lock-burn-height: uint
             }            
 
             uint          

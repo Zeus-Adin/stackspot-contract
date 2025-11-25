@@ -2,7 +2,7 @@
 (use-trait stackspot-trait .stackspot-trait.stackspot-trait)
 
 ;; Platform address
-(define-constant platform-treasury tx-sender)
+(define-constant platform-treasury 'ST38MERBGC0XV5VVRYWBR0SF58CJ49CAQA37RSYS9)
 (define-read-only (get-platform-treasury) platform-treasury)
 
 ;; Core errors
@@ -277,7 +277,7 @@
         (asserts! (is-eq pot-contract (contract-of contract)) ERR_UNAUTHORIZED)
         (asserts! (is-eq contract-caller (contract-of contract)) ERR_UNAUTHORIZED)
 
-        (asserts! (is-ok (contract-call? .stackspot-distribute delegate-treasury contract delegate-to)) ERR_DISPATCH_FAILED)
+        (try! (contract-call? .stackspot-distribute delegate-treasury contract delegate-to))
 
         (ok true)
     )

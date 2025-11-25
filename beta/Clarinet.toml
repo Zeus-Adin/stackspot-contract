@@ -6,16 +6,16 @@ telemetry = true
 cache_dir = './.cache'
 
 [[project.requirements]]
-contract_id = 'ST11RGVR0CAWYKWPVKPHA20QDE5Z5N35BMY9BSR9Z.sim-pox-4'
-
-[[project.requirements]]
-contract_id = 'SN69P7RZRKK8ERQCCABHT2JWKB2S4DHH9H74231T.sbtc-token'
-
-[[project.requirements]]
-contract_id = 'ST11RGVR0CAWYKWPVKPHA20QDE5Z5N35BMY9BSR9Z.sim-pox4-multi-pool-v1'
-
-[[project.requirements]]
 contract_id = 'STT4SQP5RC1BFAJEQKBHZMXQ8NQ7G118F0XRWTMV.nft-trait'
+
+[[project.requirements]]
+contract_id = 'ST1GJ530RS8EHRN2652Y195Q2WMCT0NP211HS150X.sim-pox-4'
+
+[[project.requirements]]
+contract_id = 'ST1AAE4J817SSHYSZXPMFV6QB321AWKDV64NKZ9HQ.sim-pox4-multi-pool-v1'
+
+[[project.requirements]]
+contract_id = 'ST29A83G76TM23HXCXR0P2C8T52N92ATRVJ2K953R.sbtc-token'
 [contracts.stackspot-admin]
 path = 'contracts/stackspot-admin.clar'
 clarity_version = 3

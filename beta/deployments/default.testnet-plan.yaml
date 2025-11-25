@@ -7,60 +7,60 @@ bitcoin-node: "http://blockstack:blockstacksystem@bitcoind.testnet.stacks.co:183
 plan:
   batches:
     - id: 0
-      transactions:        
+      transactions:
         - contract-publish:
             contract-name: stackspot-admin
-            expected-sender: ST38M0KHQP7XTHDZ1CPS6KP3489RW0YPW6PGTX111
-            cost: 12550
+            expected-sender: ST216NR5N7YHTSFX65BRGDFJYEXFR236AHZESTRNZ
+            cost: 470362
             path: contracts/stackspot-admin.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
             contract-name: stackspot-trait
-            expected-sender: ST38M0KHQP7XTHDZ1CPS6KP3489RW0YPW6PGTX111
-            cost: 19540
+            expected-sender: ST216NR5N7YHTSFX65BRGDFJYEXFR236AHZESTRNZ
+            cost: 470702
             path: contracts/stackspot-trait.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
-            contract-name: stackspot-audited-contracts
-            expected-sender: ST38M0KHQP7XTHDZ1CPS6KP3489RW0YPW6PGTX111
-            cost: 8430
-            path: contracts/stackspot-audited-contracts.clar
-            anchor-block-only: true
-            clarity-version: 3
-        - contract-publish:
-            contract-name: stackspot-winners
-            expected-sender: ST38M0KHQP7XTHDZ1CPS6KP3489RW0YPW6PGTX111
-            cost: 2980
-            path: contracts/stackspot-winners.clar
-            anchor-block-only: true
-            clarity-version: 3
-        - contract-publish:
-            contract-name: stackspot-distribute
-            expected-sender: ST38M0KHQP7XTHDZ1CPS6KP3489RW0YPW6PGTX111
-            cost: 115240
-            path: contracts/stackspot-distribute.clar
-            anchor-block-only: true
-            clarity-version: 3
-        - contract-publish:
-            contract-name: stackspot-registery
-            expected-sender: ST38M0KHQP7XTHDZ1CPS6KP3489RW0YPW6PGTX111
-            cost: 2960
-            path: contracts/stackspot-registery.clar
-            anchor-block-only: true
-            clarity-version: 3
-        - contract-publish:
             contract-name: stackspot-vrf
-            expected-sender: ST38M0KHQP7XTHDZ1CPS6KP3489RW0YPW6PGTX111
-            cost: 53360
+            expected-sender: ST216NR5N7YHTSFX65BRGDFJYEXFR236AHZESTRNZ
+            cost: 471782
             path: contracts/stackspot-vrf.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
+            contract-name: stackspot-audited-contracts
+            expected-sender: ST216NR5N7YHTSFX65BRGDFJYEXFR236AHZESTRNZ
+            cost: 469999
+            path: contracts/stackspot-audited-contracts.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: stackspot-registery
+            expected-sender: ST216NR5N7YHTSFX65BRGDFJYEXFR236AHZESTRNZ
+            cost: 469745
+            path: contracts/stackspot-registery.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: stackspot-winners
+            expected-sender: ST216NR5N7YHTSFX65BRGDFJYEXFR236AHZESTRNZ
+            cost: 469745
+            path: contracts/stackspot-winners.clar
+            anchor-block-only: true
+            clarity-version: 3                 
+        - contract-publish:
+            contract-name: stackspot-distribute
+            expected-sender: ST216NR5N7YHTSFX65BRGDFJYEXFR236AHZESTRNZ
+            cost: 474328
+            path: contracts/stackspot-distribute.clar
+            anchor-block-only: true
+            clarity-version: 3        
+        - contract-publish:
             contract-name: stackspots
-            expected-sender: ST38M0KHQP7XTHDZ1CPS6KP3489RW0YPW6PGTX111
-            cost: 105550
+            expected-sender: ST216NR5N7YHTSFX65BRGDFJYEXFR236AHZESTRNZ
+            cost: 473903
             path: contracts/stackspots.clar
             anchor-block-only: true
             clarity-version: 3

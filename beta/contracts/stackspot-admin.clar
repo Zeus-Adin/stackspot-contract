@@ -42,6 +42,10 @@
             (caller-is-admin (default-to false (map-get? admins tx-sender)))
             (is-public-pot-deploy-enabled (var-get public-pot-deploy))
         )
-        (if caller-is-admin true is-public-pot-deploy-enabled)
+        (or caller-is-admin is-public-pot-deploy-enabled)
    )
 )
+
+;; Initialze admin addresses
+(add-update-admin-status tx-sender true)
+(add-update-admin-status 'STKDX8FGPFGANBDTC99BMT5Y04QZCAGNQNAX3FE3 true)
