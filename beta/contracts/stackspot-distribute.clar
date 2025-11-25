@@ -10,11 +10,11 @@
 (define-constant ERR_DISPATCH_FAILED (err u1108))
 (define-constant ERR_LOG_FAILED (err u1107))
 ;; Platform Address
-(define-constant platform-address tx-sender)
+(define-constant platform-address 'ST1QB8J5MM37YXATNMWB06XDT0DJCP2RBCCJ51YT8)
 
 ;; Get PoX Info and return pool config
 ;; Testnet version
-(define-read-only (get-pox-info) (unwrap-panic (contract-call? 'ST1GJ530RS8EHRN2652Y195Q2WMCT0NP211HS150X.sim-pox-4 get-pox-info)))
+(define-read-only (get-pox-info) (unwrap-panic (contract-call? 'ST000000000000000000002AMW42H.pox-4 get-pox-info)))
 (define-read-only (get-pool-config (lock-burn-height uint))
     (let
         (
@@ -274,6 +274,6 @@
         })
 
         ;; Delegate pot values to pool
-        (contract-call? 'ST1AAE4J817SSHYSZXPMFV6QB321AWKDV64NKZ9HQ.sim-pox4-multi-pool-v1 delegate-stx amount-ustx (unwrap! (to-consensus-buff? {c: "sbtc"}) ERR_NOT_FOUND))
+        (contract-call? 'ST29W8BBBY984ZY1VD997WKFG1XZSXW4JWY5FM3Z4.sim-pox4-multi-pool-v1 delegate-stx amount-ustx (unwrap! (to-consensus-buff? {c: "sbtc"}) ERR_NOT_FOUND))
     )
 )

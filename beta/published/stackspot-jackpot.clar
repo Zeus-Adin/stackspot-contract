@@ -1,6 +1,6 @@
 ;; --- Traits
-(impl-trait 'ST216NR5N7YHTSFX65BRGDFJYEXFR236AHZESTRNZ.stackspot-trait.stackspot-trait)
-(use-trait stackspot-trait 'ST216NR5N7YHTSFX65BRGDFJYEXFR236AHZESTRNZ.stackspot-trait.stackspot-trait)
+(impl-trait 'ST20TS83C2WVK5YT99M3Z0RTRDD23WN6903BWSR54.stackspot-trait.stackspot-trait)
+(use-trait stackspot-trait 'ST20TS83C2WVK5YT99M3Z0RTRDD23WN6903BWSR54.stackspot-trait.stackspot-trait)
 
 ;; Errors
 (define-constant ERR_NOT_FOUND (err u1001))
@@ -42,7 +42,7 @@
 
 ;; Get PoX Info and return pool config
 (define-read-only (get-pox-info)
-    (unwrap-panic (contract-call? 'ST1GJ530RS8EHRN2652Y195Q2WMCT0NP211HS150X.sim-pox-4 get-pox-info))
+    (unwrap-panic (contract-call? 'ST000000000000000000002AMW42H.pox-4 get-pox-info))
 )
 (define-read-only (get-pool-config)
     (let (
@@ -117,7 +117,7 @@
 ;; Platform Address
 ;; Pot Treasury Address
 (define-constant total-max-participants u100)
-(define-constant platform-address (contract-call? 'ST216NR5N7YHTSFX65BRGDFJYEXFR236AHZESTRNZ.stackspots get-platform-treasury))
+(define-constant platform-address (contract-call? 'ST20TS83C2WVK5YT99M3Z0RTRDD23WN6903BWSR54.stackspots get-platform-treasury))
 
 (define-constant pot-treasury-address (as-contract tx-sender))
 (define-read-only (get-pot-treasury)
@@ -175,7 +175,7 @@
 (define-read-only (get-pot-participants)
     (let (
             (participants-count (var-get last-participant))
-            (n (contract-call? 'ST216NR5N7YHTSFX65BRGDFJYEXFR236AHZESTRNZ.stackspot-vrf generate-list u0 participants-count))
+            (n (contract-call? 'ST20TS83C2WVK5YT99M3Z0RTRDD23WN6903BWSR54.stackspot-vrf generate-list u0 participants-count))
             (participants (match n
                 value (map get-by-id-helper-private value)
                 (list)
@@ -187,7 +187,7 @@
 
 ;; Get Pot ID
 (define-read-only (get-pot-id)
-    (contract-call? 'ST216NR5N7YHTSFX65BRGDFJYEXFR236AHZESTRNZ.stackspots get-token-id pot-treasury-address)
+    (contract-call? 'ST20TS83C2WVK5YT99M3Z0RTRDD23WN6903BWSR54.stackspots get-token-id pot-treasury-address)
 )
 
 ;; Get Pot Starter Principal
@@ -209,8 +209,8 @@
             (pot-admin-buff (unwrap! (to-consensus-buff? pot-admin) ERR_NOT_FOUND))
             (merged-buff (concat sender-buff pot-admin-buff))
             (merged-sha256 (sha256 merged-buff))
-            (merged-sha256-uint (buff-to-uint-le (contract-call? 'ST216NR5N7YHTSFX65BRGDFJYEXFR236AHZESTRNZ.stackspot-vrf lower-16-le merged-sha256)))
-            (vrf-random-digit (unwrap! (contract-call? 'ST216NR5N7YHTSFX65BRGDFJYEXFR236AHZESTRNZ.stackspot-vrf get-random-uint-at-block stacks-block-height) ERR_NOT_FOUND))
+            (merged-sha256-uint (buff-to-uint-le (contract-call? 'ST20TS83C2WVK5YT99M3Z0RTRDD23WN6903BWSR54.stackspot-vrf lower-16-le merged-sha256)))
+            (vrf-random-digit (unwrap! (contract-call? 'ST20TS83C2WVK5YT99M3Z0RTRDD23WN6903BWSR54.stackspot-vrf get-random-uint-at-block stacks-block-height) ERR_NOT_FOUND))
         )
         (ok (mod vrf-random-digit participant-count))
     )
@@ -295,7 +295,7 @@
         (asserts! (is-eq pot-treasury (contract-of pot-contract)) ERR_UNAUTHORIZED)
 
         ;; Delegate treasury to pot contract
-        (try! (as-contract (contract-call? 'ST216NR5N7YHTSFX65BRGDFJYEXFR236AHZESTRNZ.stackspots delegate-treasury pot-contract pot-treasury)))
+        (try! (as-contract (contract-call? 'ST20TS83C2WVK5YT99M3Z0RTRDD23WN6903BWSR54.stackspots delegate-treasury pot-contract pot-treasury)))
 
         ;; Set pot starter principal
         (var-set pot-starter-principal (some tx-sender))
@@ -360,10 +360,10 @@
         (var-set winners-values (some {winner-id: pot-winner-id, winner-address: winner}))
 
         ;; Returns participants principals
-        (try! (as-contract (contract-call? 'ST216NR5N7YHTSFX65BRGDFJYEXFR236AHZESTRNZ.stackspots dispatch-principals pot-contract)))
+        (try! (as-contract (contract-call? 'ST20TS83C2WVK5YT99M3Z0RTRDD23WN6903BWSR54.stackspots dispatch-principals pot-contract)))
 
         ;; Disburse rewards
-        (asserts! (is-ok (as-contract (contract-call? 'ST216NR5N7YHTSFX65BRGDFJYEXFR236AHZESTRNZ.stackspots dispatch-rewards pot-contract))) ERR_DISPATCH_FAILED)
+        (asserts! (is-ok (as-contract (contract-call? 'ST20TS83C2WVK5YT99M3Z0RTRDD23WN6903BWSR54.stackspots dispatch-rewards pot-contract))) ERR_DISPATCH_FAILED)
 
         ;; Print
         (print {
@@ -411,5 +411,5 @@
 (define-read-only (get-pot-origin-contract-sha-hash) (ok origin-contract-sha-hash))
 (define-read-only (get-pot-reward-token) (ok "sbtc"))
 
-(as-contract (contract-call? 'ST1AAE4J817SSHYSZXPMFV6QB321AWKDV64NKZ9HQ.sim-pox4-multi-pool-v1 allow-contract-caller 'ST216NR5N7YHTSFX65BRGDFJYEXFR236AHZESTRNZ.stackspot-distribute none))
-(as-contract (contract-call? 'ST1GJ530RS8EHRN2652Y195Q2WMCT0NP211HS150X.sim-pox-4 allow-contract-caller 'ST1AAE4J817SSHYSZXPMFV6QB321AWKDV64NKZ9HQ.sim-pox4-multi-pool-v1 none))
+(as-contract (contract-call? 'ST29W8BBBY984ZY1VD997WKFG1XZSXW4JWY5FM3Z4.sim-pox4-multi-pool-v1 allow-contract-caller 'ST20TS83C2WVK5YT99M3Z0RTRDD23WN6903BWSR54.stackspot-distribute none))
+(as-contract (contract-call? 'ST000000000000000000002AMW42H.pox-4 allow-contract-caller 'ST29W8BBBY984ZY1VD997WKFG1XZSXW4JWY5FM3Z4.sim-pox4-multi-pool-v1 none))
