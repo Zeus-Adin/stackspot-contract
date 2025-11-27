@@ -41,12 +41,10 @@
 (define-data-var lock-burn-height uint u0)
 
 ;; Get PoX Info and return pool config
-(define-read-only (get-pox-info)
-    (unwrap-panic (contract-call? 'ST000000000000000000002AMW42H.pox-4 get-pox-info))
-)
+(define-constant pox-data (contract-call? 'ST000000000000000000002AMW42H.pox-4 get-pox-info))
 (define-read-only (get-pool-config)
     (let (
-            (pox-details (get-pox-info))
+            (pox-details (unwrap! pox-data ERR_NOT_FOUND))
             (first (get first-burnchain-block-height pox-details))
             (cycle-len (get reward-cycle-length pox-details))
             (prepare-len (get prepare-cycle-length pox-details))
@@ -275,7 +273,7 @@
         ;; Validate amount is greater than 0
         ;; Validate participant is the same as the tx sender
         ;; Delegate to pot
-        (asserts! (not (var-get locked)) ERR_POT_JOIN_CLOSED)
+        (asserts! (not (validate-can-join-pot)) ERR_POT_JOIN_CLOSED)
         (asserts! (> amount u0) ERR_INSUFFICIENT_AMOUNT)
         (asserts! (is-eq tx-sender participant) ERR_PARTICIPANT_ONLY)
 
@@ -288,6 +286,7 @@
 ;; Public Function That Starts The Jackpot
 (define-public (start-stackspot-jackpot (pot-contract <stackspot-trait>))
     (let ((pot-treasury pot-treasury-address))
+        (var-set lock-burn-height burn-block-height)
 
         ;; Validate can pool pot
         ;; Validate pot treasury is the same as the pot contract
@@ -302,7 +301,6 @@
 
         ;; Lock pot
         (var-set locked true)
-        (var-set lock-burn-height burn-block-height)
 
         ;; Print
         (print {
