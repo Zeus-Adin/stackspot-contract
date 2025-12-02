@@ -362,7 +362,7 @@
         (try! (as-contract (contract-call? 'ST3ED9M0KHSDNFXWE0J98ZX6GTHWRP0GKAFV4C63D.stackspots dispatch-principals pot-contract)))
 
         ;; Disburse rewards
-        (asserts! (is-ok (as-contract (contract-call? 'ST3ED9M0KHSDNFXWE0J98ZX6GTHWRP0GKAFV4C63D.stackspots dispatch-rewards pot-contract))) ERR_DISPATCH_FAILED)
+        (try! (as-contract (contract-call? 'ST3ED9M0KHSDNFXWE0J98ZX6GTHWRP0GKAFV4C63D.stackspots dispatch-rewards pot-contract)))
 
         ;; Print
         (print {
