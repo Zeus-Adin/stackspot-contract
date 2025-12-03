@@ -296,6 +296,7 @@
       (asserts! (not (var-get locked)) ERR_POT_ALREADY_STARTED)
       (asserts! (> burn-block-height (+ (default-to burn-block-height (var-get first-user-joined)) MORE_THAN_ONE_CYCLE)) ERR_TOO_EARLY)
       (asserts! (is-eq (contract-of pot-contract) pot-treasury-address) ERR_ADMIN_ONLY)
+      (asserts! (is-eq tx-sender pot-admin) ERR_ADMIN_ONLY)
 
       ;; Returns participants principals
       (try! (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots dispatch-principals pot-contract)))
