@@ -41,16 +41,16 @@
 ;; Locking Mechanism To Prevent Participants From Trying To Join The Pot While The Pot Is Stacked In Pool
 (define-data-var locked bool false)
 (define-data-var lock-burn-height uint u0)
-(define-data-var first-user-joined uint u0)
+(define-data-var first-user-joined (optional uint) none)
 
 ;; Get PoX Info and return pool config
 (define-constant pox-data (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sim-pox-4 get-pox-info))
 (define-constant pox-details (unwrap! pox-data ERR_NOT_FOUND))
-(define-constant ONE_CYCLE (+ (get prepare-cycle-length pox-details) (get reward-cycle-length pox-details)) )
+(define-constant MORE_THAN_ONE_CYCLE (+ (get prepare-cycle-length pox-details) (get reward-cycle-length pox-details)) )
 
 (define-read-only (get-pool-config)
     (let (
-            
+
             (first (get first-burnchain-block-height pox-details))
             (cycle-len (get reward-cycle-length pox-details))
             (prepare-len (get prepare-cycle-length pox-details))
@@ -171,8 +171,8 @@
     (map-get? pot-participants-by-id n)
 )
 
-(define-read-only (get-pot-participant-values (participant principal))    
-    (map-get? pot-participants-by-id (default-to u0 (map-get? pot-participants-by-principal participant)))    
+(define-read-only (get-pot-participant-values (participant principal))
+    (map-get? pot-participants-by-id (default-to u0 (map-get? pot-participants-by-principal participant)))
 )
 
 ;; Read-Only public function that gets all participants
@@ -283,26 +283,26 @@
         (asserts! (> amount u0) ERR_INSUFFICIENT_AMOUNT)
 
         (try! (delegate-to-pot amount tx-sender))
-
+        ;; Set first user joined burn height
+        (and
+            (is-none (var-get first-user-joined))
+            (var-set first-user-joined (print (some burn-block-height))))
         (ok true)
     )
 )
 
-(define-public (cancel-pot)
-    (begin 
+(define-public (cancel-pot (pot-contract <stackspot-trait>))
+    (begin
       (asserts! (not (var-get locked)) ERR_POT_ALREADY_STARTED)
-      (asserts! (> burn-block-height (+ (var-get first-user-joined) ONE_CYCLE)) ERR_TOO_EARLY)
+      (asserts! (> burn-block-height (+ (default-to burn-block-height (var-get first-user-joined)) MORE_THAN_ONE_CYCLE)) ERR_TOO_EARLY)
+      (asserts! (is-eq (contract-of pot-contract) pot-treasury-address) ERR_ADMIN_ONLY)
 
       ;; Returns participants principals
-      (try! (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots dispatch-principals pot-treasury-address)))
+      (try! (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots dispatch-principals pot-contract)))
 
-      ;; Disburse rewards
-      (try! (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots dispatch-rewards pot-contract)))
       (ok true)
     )
 )
-
-(define-read-only (as-trait ()))
 
 ;; Public Function That Starts The Jackpot
 (define-public (start-stackspot-jackpot (pot-contract <stackspot-trait>))

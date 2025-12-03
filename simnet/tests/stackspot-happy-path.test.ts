@@ -68,22 +68,6 @@ describe("happy-path", () => {
 
     txReceipt = simnet.callPublicFn(
       `${address1}.stackpot2`,
-      "leave-pot",
-      [],
-      address2
-    );
-    expect(txReceipt.result).toBeOk(Cl.bool(true));
-
-    txReceipt = simnet.callPublicFn(
-      `${address1}.stackpot2`,
-      "join-pot",
-      [Cl.uint(10000000)],
-      address2
-    );
-    expect(txReceipt.result).toBeOk(Cl.bool(true));
-
-    txReceipt = simnet.callPublicFn(
-      `${address1}.stackpot2`,
       "start-stackspot-jackpot",
       [Cl.principal(`${address1}.stackpot2`)],
       address1
@@ -137,5 +121,43 @@ describe("happy-path", () => {
       "events:",
       txReceipt.events.filter((e: any) => e.event !== "print_event")
     );
+  });
+
+  it("user can join pot, cancel pot after 1050 blocks", () => {
+    let txReceipt = simnet.callPublicFn(
+      `${address1}.stackpot2`,
+      "join-pot",
+      [Cl.uint(10000000)],
+      address2
+    );
+    expect(txReceipt.result).toBeOk(Cl.bool(true));
+
+    txReceipt = simnet.callPublicFn(
+      `${address1}.stackpot2`,
+      "cancel-pot",
+      [Cl.principal(`${address1}.stackpot2`)],
+      address2
+    );
+    expect(txReceipt.result).toBeErr(Cl.uint(1409));
+
+    simnet.mineEmptyBlocks(1050 + 50 + 1);
+
+    txReceipt = simnet.callPublicFn(
+      `${address1}.stackpot2`,
+      "cancel-pot",
+      [Cl.principal(`${address1}.stackpot2`)],
+      address2
+    );
+    expect(txReceipt.result).toBeOk(Cl.bool(true));
+    expect(txReceipt.events.length).toEqual(2); // stx transfer + print event
+    expect(txReceipt.events[0]).toStrictEqual({
+      event: "stx_transfer_event",
+      data: {
+        amount: "10000000",
+        memo: "0d000000157061727469636970616e74207072696e636970616c",
+        recipient: "ST2CY5V39NHDPWSXMW9QDT3HC3GD6Q6XX4CFRK9AG",
+        sender: "ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5.stackpot2",
+      },
+    });
   });
 });
