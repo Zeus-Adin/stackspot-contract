@@ -69,7 +69,7 @@
             (pool-config (unwrap! (get-pool-config) false))
             (join-end (get join-end pool-config))
         )
-        (asserts! (< burn-block-height join-end) false)
+        (asserts! (< (var-get lock-burn-height) join-end) false)
         true
     )
 )
