@@ -23,14 +23,16 @@
 (define-constant ERR_DELEGATE_FAILED (err u1406))
 (define-constant ERR_DISPATCH_FAILED (err u1108))
 (define-constant ERR_POT_JOIN_FAILED (err u1408))
+(define-constant ERR_TOO_EARLY (err u1409))
+
+(define-constant JOIN_POT_MEMO (unwrap-panic (to-consensus-buff? "join pot")))
+(define-constant LEAVE_POT_MEMO (unwrap-panic (to-consensus-buff? "leave pot")))
 
 ;; Pot Starter Principal
 ;; Pot Claimer Principal
 (define-data-var pot-starter-principal (optional principal) none)
 (define-data-var pot-claimer-principal (optional principal) none)
 (define-data-var winners-values (optional {winner-id: uint, winner-address: principal}) none)
-;; Pot Rounds Counter
-(define-data-var pot-rounds uint u0)
 
 ;; Pot Participants Maps
 (define-map pot-participants-by-principal principal uint)
@@ -39,14 +41,16 @@
 ;; Locking Mechanism To Prevent Participants From Trying To Join The Pot While The Pot Is Stacked In Pool
 (define-data-var locked bool false)
 (define-data-var lock-burn-height uint u0)
+(define-data-var first-user-joined (optional uint) none)
 
 ;; Get PoX Info and return pool config
-(define-read-only (get-pox-info)
-    (unwrap-panic (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sim-pox-4 get-pox-info))
-)
+(define-constant pox-data (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sim-pox-4 get-pox-info))
+(define-constant pox-details (unwrap! pox-data ERR_NOT_FOUND))
+(define-constant MORE_THAN_ONE_CYCLE (+ (get prepare-cycle-length pox-details) (get reward-cycle-length pox-details)) )
+
 (define-read-only (get-pool-config)
     (let (
-            (pox-details (get-pox-info))
+
             (first (get first-burnchain-block-height pox-details))
             (cycle-len (get reward-cycle-length pox-details))
             (prepare-len (get prepare-cycle-length pox-details))
@@ -167,8 +171,8 @@
     (map-get? pot-participants-by-id n)
 )
 
-(define-read-only (get-pot-participant-values (participant principal))    
-    (map-get? pot-participants-by-id (default-to u0 (map-get? pot-participants-by-principal participant)))    
+(define-read-only (get-pot-participant-values (participant principal))
+    (map-get? pot-participants-by-id (default-to u0 (map-get? pot-participants-by-principal participant)))
 )
 
 ;; Read-Only public function that gets all participants
@@ -246,7 +250,7 @@
         (map-insert pot-participants-by-id index-participants {participant: participant, amount: amount})
 
         ;; Transfers User's Delegated Amount To Pot Treasury
-        (asserts! (is-ok (stx-transfer-memo? amount participant pot-treasury-address (unwrap! (to-consensus-buff? "join pot") ERR_NOT_FOUND))) ERR_POT_JOIN_FAILED)
+        (asserts! (is-ok (stx-transfer-memo? amount participant pot-treasury-address JOIN_POT_MEMO)) ERR_POT_JOIN_FAILED)
 
         ;; Updates Pot Value
         (add-pot-value amount)
@@ -268,7 +272,7 @@
 )
 
 ;; Public Function That Initiates The Payments
-(define-public (join-pot (amount uint) (participant principal))
+(define-public (join-pot (amount uint))
     (begin
 
         ;; Validate can join pot
@@ -277,39 +281,55 @@
         ;; Delegate to pot
         (asserts! (not (var-get locked)) ERR_POT_JOIN_CLOSED)
         (asserts! (> amount u0) ERR_INSUFFICIENT_AMOUNT)
-        (asserts! (is-eq tx-sender participant) ERR_PARTICIPANT_ONLY)
 
-        (try! (delegate-to-pot amount participant))
-
+        (try! (delegate-to-pot amount tx-sender))
+        ;; Set first user joined burn height
+        (and
+            (is-none (var-get first-user-joined))
+            (var-set first-user-joined (print (some burn-block-height))))
         (ok true)
+    )
+)
+
+(define-public (cancel-pot (pot-contract <stackspot-trait>))
+    (begin
+      (asserts! (not (var-get locked)) ERR_POT_ALREADY_STARTED)
+      (asserts! (> burn-block-height (+ (default-to burn-block-height (var-get first-user-joined)) MORE_THAN_ONE_CYCLE)) ERR_TOO_EARLY)
+      (asserts! (is-eq (contract-of pot-contract) pot-treasury-address) ERR_ADMIN_ONLY)
+
+      ;; Returns participants principals
+      (try! (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots dispatch-principals pot-contract)))
+
+      (ok true)
     )
 )
 
 ;; Public Function That Starts The Jackpot
 (define-public (start-stackspot-jackpot (pot-contract <stackspot-trait>))
-    (let ((pot-treasury pot-treasury-address))
+    (begin
+
+        (var-set lock-burn-height burn-block-height)
 
         ;; Validate can pool pot
-        ;; Validate pot treasury is the same as the pot contract
         (asserts! (validate-can-pool-pot) ERR_POOL_ENTRY_PASSED)
-        (asserts! (is-eq pot-treasury (contract-of pot-contract)) ERR_UNAUTHORIZED)
+        ;; Validate pot treasury is the same as the pot contract
+        (asserts! (is-eq pot-treasury-address (contract-of pot-contract)) ERR_UNAUTHORIZED)
 
         ;; Delegate treasury to pot contract
-        (try! (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots delegate-treasury pot-contract pot-treasury)))
+        (try! (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots delegate-treasury pot-contract pot-treasury-address)))
 
         ;; Set pot starter principal
         (var-set pot-starter-principal (some tx-sender))
 
         ;; Lock pot
         (var-set locked true)
-        (var-set lock-burn-height burn-block-height)
 
         ;; Print
         (print {
             event: "start-stackspot-jackpot",
             pot-starter-principal: tx-sender,
             pot-contract: (contract-of pot-contract),
-            pot-treasury: pot-treasury,
+            pot-treasury: pot-treasury-address,
             pot-participants: (unwrap! (get-pot-participants) ERR_NOT_FOUND),
             pot-value: (var-get total-pot-value),
             pot-locked: (var-get locked),
