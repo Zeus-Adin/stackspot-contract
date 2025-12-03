@@ -21,7 +21,7 @@ describe("join-pot", () => {
     let txReceipt = simnet.callPublicFn(
       `${address1}.stackpot2`,
       "join-pot",
-      [Cl.uint(10000000), Cl.principal(address2)],
+      [Cl.uint(10000000)],
       address2
     );
     expect(txReceipt.result).toBeOk(Cl.bool(true));
@@ -29,26 +29,16 @@ describe("join-pot", () => {
     txReceipt = simnet.callPublicFn(
       `${address1}.stackpot2`,
       "join-pot",
-      [Cl.uint(20000000), Cl.principal(address2)],
+      [Cl.uint(20000000)],
       address2
     );
     expect(txReceipt.result).toBeErr(Cl.uint(1104)); // already joined
   });
-  it("tx sender required as argument", () => {
-    let txReceipt = simnet.callPublicFn(
-      `${address1}.stackpot2`,
-      "join-pot",
-      [Cl.uint(20000000), Cl.principal(address1)],
-      address2
-    );
-    expect(txReceipt.result).toBeErr(Cl.uint(1105)); // wrong user
-  });
-
   it("user can't join with less than minimum", () => {
     let txReceipt = simnet.callPublicFn(
       `${address1}.stackpot2`,
       "join-pot",
-      [Cl.uint(1), Cl.principal(address2)],
+      [Cl.uint(1)],
       address2
     );
     expect(txReceipt.result).toBeErr(Cl.uint(1302)); // below minimum
@@ -58,7 +48,7 @@ describe("join-pot", () => {
     let txReceipt = simnet.callPublicFn(
       `${address1}.stackpot2`,
       "join-pot",
-      [Cl.uint(10000000), Cl.principal(address1)],
+      [Cl.uint(10000000)],
       address1
     );
     expect(txReceipt.result).toBeErr(Cl.uint(1101)); // unauthorized participant (owner)
@@ -70,22 +60,10 @@ describe("join-pot", () => {
     let txReceipt = simnet.callPublicFn(
       `${address1}.stackpot2`,
       "join-pot",
-      [Cl.uint(10000000), Cl.principal(platformAddress)],
+      [Cl.uint(10000000)],
       platformAddress
     );
     expect(txReceipt.result).toBeErr(Cl.uint(1101)); // unauthorized participant (platform)
-  });
-
-  it("pot treasury address cannot join pot", () => {
-    // pot treasury address is contract address
-    const potTreasuryAddress = `${address1}.stackpot2`;
-    let txReceipt = simnet.callPublicFn(
-      `${address1}.stackpot2`,
-      "join-pot",
-      [Cl.uint(10000000), Cl.principal(potTreasuryAddress)],
-      address2
-    );
-    expect(txReceipt.result).toBeErr(Cl.uint(1105)); // unauthorized participant (treasury)
   });
 
   it("cannot join pot when locked", () => {
@@ -94,7 +72,7 @@ describe("join-pot", () => {
     let txReceipt = simnet.callPublicFn(
       `${address1}.stackpot2`,
       "join-pot",
-      [Cl.uint(10000000), Cl.principal(address2)],
+      [Cl.uint(10000000)],
       address2
     );
     // expect(txReceipt.result).toBeErr(Cl.uint(103)); // delegate locked
@@ -106,7 +84,7 @@ describe("join-pot", () => {
     let txReceipt = simnet.callPublicFn(
       `${address1}.stackpot2`,
       "join-pot",
-      [Cl.uint(100000), Cl.principal(address2)],
+      [Cl.uint(100000)],
       address2
     );
     expect(txReceipt.result).toBeErr(Cl.uint(1408)); // insufficient balance

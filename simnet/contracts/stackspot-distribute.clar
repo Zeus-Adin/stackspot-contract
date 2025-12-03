@@ -35,7 +35,7 @@
     )
 )
 
-;; pot Join Stop validation
+;; pot Join End validation
 (define-read-only (validate-can-pool-pot (lock-burn-height uint))
     (let
         (

@@ -61,7 +61,23 @@ describe("happy-path", () => {
     let txReceipt = simnet.callPublicFn(
       `${address1}.stackpot2`,
       "join-pot",
-      [Cl.uint(10000000), Cl.principal(address2)],
+      [Cl.uint(10000000)],
+      address2
+    );
+    expect(txReceipt.result).toBeOk(Cl.bool(true));
+
+    txReceipt = simnet.callPublicFn(
+      `${address1}.stackpot2`,
+      "leave-pot",
+      [],
+      address2
+    );
+    expect(txReceipt.result).toBeOk(Cl.bool(true));
+
+    txReceipt = simnet.callPublicFn(
+      `${address1}.stackpot2`,
+      "join-pot",
+      [Cl.uint(10000000)],
       address2
     );
     expect(txReceipt.result).toBeOk(Cl.bool(true));
