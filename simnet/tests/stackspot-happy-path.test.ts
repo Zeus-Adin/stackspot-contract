@@ -146,7 +146,7 @@ describe("happy-path", () => {
       `${address1}.stackpot2`,
       "cancel-pot",
       [Cl.principal(`${address1}.stackpot2`)],
-      address1
+      address2
     );
     expect(txReceipt.result).toBeOk(Cl.bool(true));
     expect(txReceipt.events.length).toEqual(2); // stx transfer + print event
