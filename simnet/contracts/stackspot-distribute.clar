@@ -35,7 +35,7 @@
     )
 )
 
-;; pot Join Stop validation
+;; pot Join End validation
 (define-read-only (validate-can-pool-pot (lock-burn-height uint))
     (let
         (
@@ -149,42 +149,30 @@
         (asserts! (is-eq contract-caller .stackspots) ERR_UNAUTHORIZED)
 
         ;; Dispatch platform royalty reward
-        (try!
-            (if (> platform-royalty-reward u0)
-                (dispatch-rewards-with-sbtc platform-royalty-reward pot-treasury platform-royalty-address (to-consensus-buff? "platform royalty reward"))
-                (ok false)
-            )            
+
+        (and (> platform-royalty-reward u0)
+            (try! (dispatch-rewards-with-sbtc platform-royalty-reward pot-treasury platform-royalty-address (to-consensus-buff? "platform royalty reward")))
         )
 
         ;; Dispatch pot fee reward
-        (try!
-            (if (> pot-fee u0)
-                (dispatch-rewards-with-sbtc pot-fee pot-treasury pot-owner-address (to-consensus-buff? "pot fee reward"))
-                (ok false)
-            )
+
+        (and (> pot-fee u0)
+            (try! (dispatch-rewards-with-sbtc pot-fee pot-treasury pot-owner-address (to-consensus-buff? "pot fee reward")))
         )
         ;; Dispatch pot starter reward
-        (try!
-            (if (> pot-starter-reward u0)
-                (dispatch-rewards-with-sbtc pot-starter-reward pot-treasury pot-starter-address (to-consensus-buff? "pot starter reward"))
-                (ok false)
-            )            
+
+        (and (> pot-starter-reward u0)
+            (try! (dispatch-rewards-with-sbtc pot-starter-reward pot-treasury pot-starter-address (to-consensus-buff? "pot starter reward")))
         )
 
         ;; Dispatch claimer reward
-        (try!
-            (if (> claimer-reward u0)
-                (dispatch-rewards-with-sbtc claimer-reward pot-treasury claimer-address (to-consensus-buff? "claimer reward"))
-                (ok false)
-            )            
+        (and (> claimer-reward u0)
+            (try! (dispatch-rewards-with-sbtc claimer-reward pot-treasury claimer-address (to-consensus-buff? "claimer reward")))
         )
 
         ;; Dispatch winner reward
-        (try!
-            (if (> winner-reward u0)
-                (dispatch-rewards-with-sbtc winner-reward pot-treasury winner-address (to-consensus-buff? "winner reward"))
-                (ok false)
-            )            
+        (and (> winner-reward u0)
+            (try! (dispatch-rewards-with-sbtc winner-reward pot-treasury winner-address (to-consensus-buff? "winner reward")))
         )
 
         (try! (contract-call? .stackspot-winners log-winner (unwrap! (to-consensus-buff?
@@ -220,7 +208,7 @@
                 stacks-block-height: stacks-block-height,
                 burn-block-height: burn-block-height
             }
-            ) ERR_NOT_FOUND))            
+            ) ERR_NOT_FOUND))
         )
 
         ;; Print event
