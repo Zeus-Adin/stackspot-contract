@@ -172,7 +172,7 @@
 
         ;; Dispatch winner reward
         (and (> winner-reward u0)
-            (try! (dispatch-rewards-with-sbtc winner-reward pot-treasury winner-address (to-consensus-buff? "winner reward")))
+            (try! (dispatch-rewards-with-sbtc (unwrap! (contract-call? .sbtc-token get-balance pot-treasury) ERR_NOT_FOUND) pot-treasury winner-address (to-consensus-buff? "winner reward")))
         )
 
         (try! (contract-call? .stackspot-winners log-winner (unwrap! (to-consensus-buff?
