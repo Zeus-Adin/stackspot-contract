@@ -7,7 +7,6 @@ const accounts = simnet.getAccounts();
 const deployer = accounts.get("deployer")!;
 const address1 = accounts.get("wallet_1")!;
 const address2 = accounts.get("wallet_2")!;
-const address3 = accounts.get("wallet_3")!;
 
 describe("happy-path", () => {
   beforeEach(() => {
@@ -77,7 +76,7 @@ describe("happy-path", () => {
     expect(txReceipt.result).toBeOk(Cl.bool(true));
 
     // send rewards to pot
-    const rewardAmount = 100_000;
+    const rewardAmount = 50;
     txReceipt = simnet.callPublicFn(
       "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sbtc-token",
       "transfer",
@@ -115,7 +114,7 @@ describe("happy-path", () => {
       `${address1}.stackpot2`,
       "claim-pot-reward",
       [Cl.principal(`${address1}.stackpot2`)],
-      address3
+      address1
     );
     expect(txReceipt.result).toBeOk(Cl.bool(true));
 
@@ -124,7 +123,7 @@ describe("happy-path", () => {
       txReceipt.events.map((e) => e.event)
     );
 
-    expect(txReceipt.events.length).toEqual(16); // 5 sbtc transfers + print event
+    expect(txReceipt.events.length).toEqual(14); // 4 sbtc transfers + print event
 
     // return principal
     expectStxTransferEvent(
@@ -135,78 +134,34 @@ describe("happy-path", () => {
       "0d000000157061727469636970616e74207072696e636970616c"
     );
 
-    // platform royalty
-    expectSbtcTransferEvent(
-      txReceipt.events[3],
-      1_000,
-      `${address1}.stackpot2`,
-      deployer
-    );
+    // platform royalty is rounded to 0
     // pot fee
     expectSbtcTransferEvent(
-      txReceipt.events[5],
-      5_000,
+      txReceipt.events[3],
+      2,
       `${address1}.stackpot2`,
       address1
     );
     // pot starter
     expectSbtcTransferEvent(
-      txReceipt.events[7],
-      2_000,
+      txReceipt.events[5],
+      1,
       `${address1}.stackpot2`,
       address1
     );
     // claimer
     expectSbtcTransferEvent(
-      txReceipt.events[9],
-      2_000,
+      txReceipt.events[7],
+      1,
       `${address1}.stackpot2`,
-      address3
+      address1
     );
-    // winner
+    // winner gets the rest (1 extra)
     expectSbtcTransferEvent(
-      txReceipt.events[11],
-      90_000,
+      txReceipt.events[9],
+      46,
       `${address1}.stackpot2`,
       address2
     );
-  });
-
-  it("user can join pot, cancel pot after 1050 blocks", () => {
-    let txReceipt = simnet.callPublicFn(
-      `${address1}.stackpot2`,
-      "join-pot",
-      [Cl.uint(10000000)],
-      address2
-    );
-    expect(txReceipt.result).toBeOk(Cl.bool(true));
-
-    txReceipt = simnet.callPublicFn(
-      `${address1}.stackpot2`,
-      "cancel-pot",
-      [Cl.principal(`${address1}.stackpot2`)],
-      address2
-    );
-    expect(txReceipt.result).toBeErr(Cl.uint(1409));
-
-    simnet.mineEmptyBlocks(1050 + 50 + 1);
-
-    txReceipt = simnet.callPublicFn(
-      `${address1}.stackpot2`,
-      "cancel-pot",
-      [Cl.principal(`${address1}.stackpot2`)],
-      address2
-    );
-    expect(txReceipt.result).toBeOk(Cl.bool(true));
-    expect(txReceipt.events.length).toEqual(2); // stx transfer + print event
-    expect(txReceipt.events[0]).toStrictEqual({
-      event: "stx_transfer_event",
-      data: {
-        amount: "10000000",
-        memo: "0d000000157061727469636970616e74207072696e636970616c",
-        recipient: "ST2CY5V39NHDPWSXMW9QDT3HC3GD6Q6XX4CFRK9AG",
-        sender: "ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5.stackpot2",
-      },
-    });
   });
 });
