@@ -114,29 +114,36 @@
             (pot-details (unwrap! (contract-call? contract get-pot-details) ERR_NOT_FOUND))
 
             (pot-treasury (unwrap! (contract-call? contract get-pot-treasury) ERR_NOT_FOUND))
-            (pot-yeild (unwrap! (contract-call? .sbtc-token get-balance pot-treasury) ERR_NOT_FOUND))
+            (pot-yield (unwrap! (contract-call? .sbtc-token get-balance pot-treasury) ERR_NOT_FOUND))
 
             (pot-id (unwrap! (contract-call? contract get-pot-id) ERR_NOT_FOUND))
 
             ;; Pot Fee
             (pot-owner-address (unwrap! (contract-call? contract get-pot-admin) ERR_NOT_FOUND))
-            (pot-fee (* (/ pot-yeild u100) u5))
+            (pot-fee (/ (* pot-yield u5) u100))
 
             ;; Platform Royalty
             (platform-royalty-address platform-address)
-            (platform-royalty-reward (* (/ pot-yeild u100) u1))
+            (platform-royalty-reward (/ (* pot-yield u1) u100))
 
             ;; Pot Starter Values
             (pot-starter-address (unwrap! (get pot-starter-address pot-details) ERR_NOT_FOUND))
-            (pot-starter-reward (* (/ pot-yeild u100) u2))
+            (pot-starter-reward (/ (* pot-yield u2) u100))
 
             ;; Claimer Values
             (claimer-address (unwrap! (get pot-claimer-address pot-details) ERR_NOT_FOUND))
-            (claimer-reward (* (/ pot-yeild u100) u2))
+            (claimer-reward (/ (* pot-yield u2) u100))
 
             ;; Winner Values
             (winner-address (unwrap! (get winner-address (get winners-values pot-details)) ERR_NOT_FOUND))
-            (winner-reward (* (/ pot-yeild u100) u90))
+            (winner-reward
+                (- pot-yield
+                    platform-royalty-reward
+                    pot-fee
+                    pot-starter-reward
+                    claimer-reward
+                )
+            )
         )
 
         ;; Validate's if the pot claim is not reached
@@ -144,7 +151,7 @@
         ;; Validate's if the pot treasury is the same as the tx-sender
         ;; Validate's if the contract caller is the allowed caller
         (asserts! (validate-can-claim-pot (get pot-lock-burn-height pot-details)) ERR_POT_CLAIM_NOT_REACHED)
-        (asserts! (> pot-yeild u0) ERR_INSUFFICIENT_POT_REWARD)
+        (asserts! (> pot-yield u0) ERR_INSUFFICIENT_POT_REWARD)
         (asserts! (is-eq pot-treasury tx-sender) ERR_UNAUTHORIZED)
         (asserts! (is-eq contract-caller .stackspots) ERR_UNAUTHORIZED)
 
@@ -183,7 +190,7 @@
                 pot-participants-count: (get pot-participants-count pot-details),
                 pot-participants: (unwrap! (contract-call? contract get-pot-participants) ERR_NOT_FOUND),
                 pot-value: (get pot-value pot-details),
-                pot-yield-amount: pot-yeild,
+                pot-yield-amount: pot-yield,
                 ;; Winner Values
                 winners-values:  (unwrap! (get winners-values pot-details) ERR_NOT_FOUND),
                 ;; Starter Values
