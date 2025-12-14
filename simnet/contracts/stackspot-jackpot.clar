@@ -24,6 +24,7 @@
 (define-constant ERR_DISPATCH_FAILED (err u1108))
 (define-constant ERR_POT_JOIN_FAILED (err u1408))
 (define-constant ERR_TOO_EARLY (err u1409))
+(define-constant ERR_INSUFFICIENT_REWARD (err u1410))
 
 (define-constant JOIN_POT_MEMO (unwrap-panic (to-consensus-buff? "join pot")))
 (define-constant LEAVE_POT_MEMO (unwrap-panic (to-consensus-buff? "leave pot")))
@@ -47,6 +48,9 @@
 (define-constant pox-data (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sim-pox-4 get-pox-info))
 (define-constant pox-details (unwrap! pox-data ERR_NOT_FOUND))
 (define-constant MORE_THAN_ONE_CYCLE (+ (get prepare-cycle-length pox-details) (get reward-cycle-length pox-details)) )
+
+;; Get platform fee
+(define-constant platform-fee (contract-call? .stackspots get-fee ))
 
 (define-read-only (get-pool-config)
     (let (
@@ -91,6 +95,11 @@
         )
         (asserts! (> burn-block-height reward-release) false)
     )
+)
+
+;; This function validates that the reward covers the pot deployment fees`
+(define-read-only (validate-reward-covers-pot-deployment-fees (capital uint) (fee uint)) ;; 0.015% of the capital must be enough to cover the pot deployment fees
+    (> (/ (* capital u15) u100000) fee)
 )
 
 (define-read-only (is-locked)
@@ -307,8 +316,10 @@
 ;; Public Function That Starts The Jackpot
 (define-public (start-stackspot-jackpot (pot-contract <stackspot-trait>))
     (begin
-
         (var-set lock-burn-height burn-block-height)
+
+        ;; Validate reward covers pot deployment fees
+        (asserts! (validate-reward-covers-pot-deployment-fees (var-get total-pot-value) platform-fee) ERR_INSUFFICIENT_REWARD)
 
         ;; Validate can pool pot
         (asserts! (validate-can-pool-pot) ERR_POOL_ENTRY_PASSED)
