@@ -49,3 +49,5 @@
 ;; Initialze admin addresses
 (add-update-admin-status tx-sender true)
 (add-update-admin-status 'SPT4SQP5RC1BFAJEQKBHZMXQ8NQ7G118F335BD85 true)
+(add-update-admin-status 'SPN4Y5QPGQA8882ZXW90ADC2DHYXMSTN8VAR8C3X true)
+(add-update-admin-status 'SP3WAR3N1XRR139DXCGPR1ATPK2VN63PGRXTD537N true)
