@@ -10,7 +10,7 @@
 (define-constant ERR_DISPATCH_FAILED (err u1108))
 (define-constant ERR_LOG_FAILED (err u1107))
 ;; Platform Address
-(define-constant platform-address (contract-call? .stackspots get-platform-treasury))
+(define-constant platform-address 'SM2X6FPWK6746NDDAS21DVS17KQWWNFEK05V8SP20)
 
 ;; Get PoX Info and return pool config
 ;; Testnet version
