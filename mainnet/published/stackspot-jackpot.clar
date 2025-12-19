@@ -41,7 +41,7 @@
 
 ;; Locking Mechanism To Prevent Participants From Trying To Join The Pot While The Pot Is Stacked In Pool
 (define-data-var locked bool false)
-(define-data-var lock-burn-height uint u0)
+(define-data-var lock-burn-height (optional uint) none)
 (define-data-var first-user-joined (optional uint) none)
 
 ;; Get PoX Info and return pool config
@@ -58,7 +58,7 @@
             (first (get first-burnchain-block-height pox-details))
             (cycle-len (get reward-cycle-length pox-details))
             (prepare-len (get prepare-cycle-length pox-details))
-            (cycle (/ (- (var-get lock-burn-height) first) cycle-len))
+            (cycle (/ (- (default-to burn-block-height (var-get lock-burn-height)) first) cycle-len))
             (cycle-start (+ first (* cycle cycle-len)))
             (next-cycle-start (+ first (* (+ cycle u1) cycle-len)))
         )
@@ -77,7 +77,7 @@
             (pool-config (unwrap! (get-pool-config) false))
             (join-end (get join-end pool-config))
         )
-        (asserts! (< (var-get lock-burn-height) join-end) false)
+        (asserts! (< (default-to burn-block-height (var-get lock-burn-height)) join-end) false)
         true
     )
 )
@@ -121,7 +121,7 @@
             pot-claimer-address: (var-get pot-claimer-principal),
             pool-config: (unwrap! (get-pool-config) ERR_NOT_FOUND),
             pot-locked: (var-get locked),
-            pot-lock-burn-height: (var-get lock-burn-height),
+            pot-lock-burn-height: (default-to burn-block-height (var-get lock-burn-height)),
         }
     )
 )
@@ -316,7 +316,7 @@
 ;; Public Function That Starts The Jackpot
 (define-public (start-stackspot-jackpot (pot-contract <stackspot-trait>))
     (begin
-        (var-set lock-burn-height burn-block-height)
+        (var-set lock-burn-height (some burn-block-height))
 
         ;; Validate reward covers pot deployment fees
         (asserts! (validate-pot-value-target-is-met) ERR_INSUFFICIENT_REWARD)
