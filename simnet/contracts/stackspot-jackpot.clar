@@ -50,7 +50,7 @@
 (define-constant MORE_THAN_ONE_CYCLE (+ (get prepare-cycle-length pox-details) (get reward-cycle-length pox-details)) )
 
 ;; Get platform fee
-(define-constant platform-fee (contract-call? .stackspots get-fee ))
+(define-constant platform-fee (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots get-fee ))
 
 (define-read-only (get-pool-config)
     (let (
@@ -99,7 +99,7 @@
 
 ;; This function validates that the reward covers the pot deployment fees`
 (define-read-only (validate-pot-value-target-is-met) 
-    (> (var-get total-pot-value) (* pot-min-amount pot-max-participants))
+    (>= (var-get total-pot-value) (* pot-min-amount pot-max-participants))
 )
 
 (define-read-only (is-locked)
