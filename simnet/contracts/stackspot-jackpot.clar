@@ -99,7 +99,7 @@
 
 ;; This function validates that the reward covers the pot deployment fees`
 (define-read-only (validate-pot-value-target-is-met) 
-    (> (var-get total-pot-value) (* pot-min-amount pot-max-participants))
+    (>= (var-get total-pot-value) (* pot-min-amount pot-max-participants))
 )
 
 (define-read-only (is-locked)
