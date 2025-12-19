@@ -243,8 +243,8 @@
         (asserts! (>= amount min-amount) ERR_INSUFFICIENT_AMOUNT)
 
         (asserts! (not (is-eq participant pot-treasury-address)) ERR_UNAUTHORIZED)
-        ;; (asserts! (not (is-eq participant platform-address)) ERR_UNAUTHORIZED)
-        ;; (asserts! (not (is-eq participant pot-admin)) ERR_UNAUTHORIZED)
+        (asserts! (not (is-eq participant platform-address)) ERR_UNAUTHORIZED)
+        (asserts! (not (is-eq participant pot-admin)) ERR_UNAUTHORIZED)
 
         (asserts! (<= index-participants max-participants)
             ERR_MAX_PARTICIPANTS_REACHED
