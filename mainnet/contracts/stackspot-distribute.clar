@@ -10,11 +10,11 @@
 (define-constant ERR_DISPATCH_FAILED (err u1108))
 (define-constant ERR_LOG_FAILED (err u1107))
 ;; Platform Address
-(define-constant platform-address 'ST1QB8J5MM37YXATNMWB06XDT0DJCP2RBCCJ51YT8)
+(define-constant platform-address (contract-call? .stackspots get-platform-treasury))
 
 ;; Get PoX Info and return pool config
 ;; Testnet version
-(define-read-only (get-pox-info) (unwrap-panic (contract-call? 'ST000000000000000000002AMW42H.pox-4 get-pox-info)))
+(define-read-only (get-pox-info) (unwrap-panic (contract-call? 'SP000000000000000000002Q6VF78.pox-4 get-pox-info)))
 (define-read-only (get-pool-config (lock-burn-height uint))
     (let
         (
@@ -35,7 +35,7 @@
     )
 )
 
-;; pot Join Stop validation
+;; pot Join End validation
 (define-read-only (validate-can-pool-pot (lock-burn-height uint))
     (let
         (
@@ -104,7 +104,7 @@
 )
 
 (define-private (dispatch-rewards-with-sbtc (amount uint) (from principal) (to principal) (memo (optional (buff 32))))
-    (contract-call? 'ST29A83G76TM23HXCXR0P2C8T52N92ATRVJ2K953R.sbtc-token transfer amount from to memo)
+    (contract-call? 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token transfer amount from to memo)
 )
 
 (define-public (dispatch-rewards (contract <stackspot-trait>))
@@ -114,29 +114,36 @@
             (pot-details (unwrap! (contract-call? contract get-pot-details) ERR_NOT_FOUND))
 
             (pot-treasury (unwrap! (contract-call? contract get-pot-treasury) ERR_NOT_FOUND))
-            (pot-yeild (unwrap! (contract-call? 'ST29A83G76TM23HXCXR0P2C8T52N92ATRVJ2K953R.sbtc-token get-balance pot-treasury) ERR_NOT_FOUND))
+            (pot-yield (unwrap! (contract-call? 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token get-balance pot-treasury) ERR_NOT_FOUND))
 
             (pot-id (unwrap! (contract-call? contract get-pot-id) ERR_NOT_FOUND))
 
             ;; Pot Fee
             (pot-owner-address (unwrap! (contract-call? contract get-pot-admin) ERR_NOT_FOUND))
-            (pot-fee (* (/ pot-yeild u100) u5))
+            (pot-fee (/ (* pot-yield u5) u100))
 
             ;; Platform Royalty
             (platform-royalty-address platform-address)
-            (platform-royalty-reward (* (/ pot-yeild u100) u1))
+            (platform-royalty-reward (/ (* pot-yield u1) u100))
 
             ;; Pot Starter Values
             (pot-starter-address (unwrap! (get pot-starter-address pot-details) ERR_NOT_FOUND))
-            (pot-starter-reward (* (/ pot-yeild u100) u2))
+            (pot-starter-reward (/ (* pot-yield u2) u100))
 
             ;; Claimer Values
             (claimer-address (unwrap! (get pot-claimer-address pot-details) ERR_NOT_FOUND))
-            (claimer-reward (* (/ pot-yeild u100) u2))
+            (claimer-reward (/ (* pot-yield u2) u100))
 
             ;; Winner Values
             (winner-address (unwrap! (get winner-address (get winners-values pot-details)) ERR_NOT_FOUND))
-            (winner-reward (* (/ pot-yeild u100) u90))
+            (winner-reward
+                (- pot-yield
+                    platform-royalty-reward
+                    pot-fee
+                    pot-starter-reward
+                    claimer-reward
+                )
+            )
         )
 
         ;; Validate's if the pot claim is not reached
@@ -144,47 +151,35 @@
         ;; Validate's if the pot treasury is the same as the tx-sender
         ;; Validate's if the contract caller is the allowed caller
         (asserts! (validate-can-claim-pot (get pot-lock-burn-height pot-details)) ERR_POT_CLAIM_NOT_REACHED)
-        (asserts! (> pot-yeild u0) ERR_INSUFFICIENT_POT_REWARD)
+        (asserts! (> pot-yield u0) ERR_INSUFFICIENT_POT_REWARD)
         (asserts! (is-eq pot-treasury tx-sender) ERR_UNAUTHORIZED)
         (asserts! (is-eq contract-caller .stackspots) ERR_UNAUTHORIZED)
 
         ;; Dispatch platform royalty reward
-        (try!
-            (if (> platform-royalty-reward u0)
-                (dispatch-rewards-with-sbtc platform-royalty-reward pot-treasury platform-royalty-address (to-consensus-buff? "platform royalty reward"))
-                (ok false)
-            )            
+
+        (and (> platform-royalty-reward u0)
+            (try! (dispatch-rewards-with-sbtc platform-royalty-reward pot-treasury platform-royalty-address (to-consensus-buff? "platform royalty reward")))
         )
 
         ;; Dispatch pot fee reward
-        (try!
-            (if (> pot-fee u0)
-                (dispatch-rewards-with-sbtc pot-fee pot-treasury pot-owner-address (to-consensus-buff? "pot fee reward"))
-                (ok false)
-            )            
+
+        (and (> pot-fee u0)
+            (try! (dispatch-rewards-with-sbtc pot-fee pot-treasury pot-owner-address (to-consensus-buff? "pot fee reward")))
         )
         ;; Dispatch pot starter reward
-        (try!
-            (if (> pot-starter-reward u0)
-                (dispatch-rewards-with-sbtc pot-starter-reward pot-treasury pot-starter-address (to-consensus-buff? "pot starter reward"))
-                (ok false)
-            )            
+
+        (and (> pot-starter-reward u0)
+            (try! (dispatch-rewards-with-sbtc pot-starter-reward pot-treasury pot-starter-address (to-consensus-buff? "pot starter reward")))
         )
 
         ;; Dispatch claimer reward
-        (try!
-            (if (> claimer-reward u0)
-                (dispatch-rewards-with-sbtc claimer-reward pot-treasury claimer-address (to-consensus-buff? "claimer reward"))
-                (ok false)
-            )            
+        (and (> claimer-reward u0)
+            (try! (dispatch-rewards-with-sbtc claimer-reward pot-treasury claimer-address (to-consensus-buff? "claimer reward")))
         )
 
         ;; Dispatch winner reward
-        (try!
-            (if (> winner-reward u0)
-                (dispatch-rewards-with-sbtc winner-reward pot-treasury winner-address (to-consensus-buff? "winner reward"))
-                (ok false)
-            )            
+        (and (> winner-reward u0)
+            (try! (dispatch-rewards-with-sbtc (unwrap! (contract-call? 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token get-balance pot-treasury) ERR_NOT_FOUND) pot-treasury winner-address (to-consensus-buff? "winner reward")))
         )
 
         (try! (contract-call? .stackspot-winners log-winner (unwrap! (to-consensus-buff?
@@ -195,7 +190,7 @@
                 pot-participants-count: (get pot-participants-count pot-details),
                 pot-participants: (unwrap! (contract-call? contract get-pot-participants) ERR_NOT_FOUND),
                 pot-value: (get pot-value pot-details),
-                pot-yield-amount: pot-yeild,
+                pot-yield-amount: pot-yield,
                 ;; Winner Values
                 winners-values:  (unwrap! (get winners-values pot-details) ERR_NOT_FOUND),
                 ;; Starter Values
@@ -268,6 +263,6 @@
         })
 
         ;; Delegate pot values to pool
-        (contract-call? 'ST29W8BBBY984ZY1VD997WKFG1XZSXW4JWY5FM3Z4.sim-pox4-multi-pool-v1 delegate-stx amount-ustx (unwrap! (to-consensus-buff? {c: "sbtc"}) ERR_NOT_FOUND))
+        (contract-call? 'SPMPMA1V6P430M8C91QS1G9XJ95S59JS1TZFZ4Q4.pox4-multi-pool-v1 delegate-stx amount-ustx (unwrap! (to-consensus-buff? {c: "sbtc"}) ERR_NOT_FOUND))
     )
 )
