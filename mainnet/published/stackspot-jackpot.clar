@@ -50,7 +50,7 @@
 (define-constant MORE_THAN_ONE_CYCLE (+ (get prepare-cycle-length pox-details) (get reward-cycle-length pox-details)) )
 
 ;; Get platform fee
-(define-constant platform-fee (contract-call? .stackspots get-fee ))
+(define-constant platform-fee (contract-call? 'SPSB44C29BP9XGEAQBVJMQR2JQSPNGX6F7GH7VRN.stackspots get-fee ))
 
 (define-read-only (get-pool-config)
     (let (

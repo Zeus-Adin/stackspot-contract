@@ -11,56 +11,56 @@ plan:
         - contract-publish:
             contract-name: stackspot-admin
             expected-sender: SPSB44C29BP9XGEAQBVJMQR2JQSPNGX6F7GH7VRN
-            cost: 9213971
+            cost: 15410
             path: contracts/stackspot-admin.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
             contract-name: stackspot-trait
             expected-sender: SPSB44C29BP9XGEAQBVJMQR2JQSPNGX6F7GH7VRN
-            cost: 9215109
+            cost: 21300
             path: contracts/stackspot-trait.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
             contract-name: stackspot-audited-contracts
             expected-sender: SPSB44C29BP9XGEAQBVJMQR2JQSPNGX6F7GH7VRN
-            cost: 9212832
+            cost: 8430
             path: contracts/stackspot-audited-contracts.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
             contract-name: stackspot-winners
             expected-sender: SPSB44C29BP9XGEAQBVJMQR2JQSPNGX6F7GH7VRN
-            cost: 9211694
+            cost: 2980
             path: contracts/stackspot-winners.clar
             anchor-block-only: true
-            clarity-version: 3
-        - contract-publish:
-            contract-name: stackspot-distribute
-            expected-sender: SPSB44C29BP9XGEAQBVJMQR2JQSPNGX6F7GH7VRN
-            cost: 9231809
-            path: contracts/stackspot-distribute.clar
-            anchor-block-only: true
-            clarity-version: 3
+            clarity-version: 3        
         - contract-publish:
             contract-name: stackspot-registry
             expected-sender: SPSB44C29BP9XGEAQBVJMQR2JQSPNGX6F7GH7VRN
-            cost: 9211694
+            cost: 2960
             path: contracts/stackspot-registry.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
             contract-name: stackspot-vrf
             expected-sender: SPSB44C29BP9XGEAQBVJMQR2JQSPNGX6F7GH7VRN
-            cost: 4673779
+            cost: 53450
             path: contracts/stackspot-vrf.clar
+            anchor-block-only: true
+            clarity-version: 3
+        - contract-publish:
+            contract-name: stackspot-distribute
+            expected-sender: SPSB44C29BP9XGEAQBVJMQR2JQSPNGX6F7GH7VRN
+            cost: 113310
+            path: contracts/stackspot-distribute.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
             contract-name: stackspots
             expected-sender: SPSB44C29BP9XGEAQBVJMQR2JQSPNGX6F7GH7VRN
-            cost: 4678589
+            cost: 105730
             path: contracts/stackspots.clar
             anchor-block-only: true
             clarity-version: 3
