@@ -36,30 +36,6 @@
   (unwrap-panic (as-max-len? (unwrap-panic (slice? input u16 u32)) u16))
 )
 
-;;;;  Inner closure for obtaining the lower 16 bytes of a 32-byte buff
-(define-private (lower-16-le-closure
-    (idx uint)
-    (input {
-      acc: (buff 16),
-      data: (buff 32),
-    })
-  )
-  (let (
-      (acc (get acc input))
-      (data (get data input))
-      (byte (unwrap-panic (element-at data idx)))
-    )
-    (print {
-      acc: (unwrap-panic (as-max-len? (concat acc byte) u16)),
-      data: data,
-    })
-    {
-      acc: (unwrap-panic (as-max-len? (concat acc byte) u16)),
-      data: data,
-    }
-  )
-)
-
 (define-constant LIST_UINT (list
   u0   u1   u2   u3   u4   u5   u6   u7   u8   u9   u10   u11   u12   u13   u14
     u15   u16   u17   u18   u19   u20   u21   u22   u23   u24   u25   u26   u27
