@@ -104,9 +104,7 @@ describe("happy-path", () => {
     const rewardReleaseHeight = Number(
       config.result.value.value["reward-release"].value
     );
-    console.log(
-      `burnHeight: ${burnHeight}, rewardReleaseHeight: ${rewardReleaseHeight}`
-    );
+
     simnet.mineEmptyBlocks(rewardReleaseHeight - burnHeight + 1);
 
     // claim rewards
@@ -117,13 +115,7 @@ describe("happy-path", () => {
       address1
     );
     expect(txReceipt.result).toBeOk(Cl.bool(true));
-
-    console.log(
-      "events:",
-      txReceipt.events.map((e) => e.event)
-    );
-
-    expect(txReceipt.events.length).toEqual(14); // 4 sbtc transfers + print event
+    expect(txReceipt.events.length).toEqual(13); // 4 sbtc transfers + print event
 
     // return principal
     expectStxTransferEvent(

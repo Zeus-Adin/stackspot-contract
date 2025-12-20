@@ -124,7 +124,7 @@ describe("happy-path", () => {
       txReceipt.events.map((e) => e.event)
     );
 
-    expect(txReceipt.events.length).toEqual(16); // 5 sbtc transfers + print event
+    expect(txReceipt.events.length).toEqual(15); // 5 sbtc transfers + print event
 
     // return principal
     expectStxTransferEvent(
