@@ -98,7 +98,7 @@
 )
 
 ;; This function validates that the reward covers the pot deployment fees`
-(define-read-only (validate-pot-value-target-is-met) 
+(define-read-only (validate-pot-value-target-is-met)
     (>= (var-get total-pot-value) (* pot-min-amount pot-max-participants))
 )
 
@@ -352,27 +352,11 @@
         (
             ;; Get pot details
             (pot-details (unwrap! (get-pot-details) (err u999)))
-            ;; @value: pot ID
-            ;; @value: pot winner's ID
-            ;; @value: pot winner's {participant: principal, amount: uint}
-            ;; @value: pot winner's principal
-            ;; @value: pot winner's reward
             (pot-id (get-pot-id))
             (total-participants (get pot-participants-count pot-details))
-
-            (participants (unwrap! (get-pot-participants) (err u998))) ;; Get participants list
-            (stacked-reward (unwrap! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sbtc-token get-balance pot-treasury-address) (err u997))) ;; Get stacked reward
-
+            (stacked-reward (unwrap! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sbtc-token get-balance pot-treasury-address) (err u997)))
             (pot-winner-id (unwrap! (get-random-index total-participants) (err u996)))
-            (winner-values (unwrap! (map-get? pot-participants-by-id pot-winner-id) (err u995)))
-            (winner (get participant winner-values))
-            (winners-reward (* (/ stacked-reward u100) u90)) ;; Calculate winner's reward 99% of stacked reward or 100% of stacked reward
-
-            (pot-starter (get pot-starter-address pot-details))
-            (pot-starter-reward (if (> stacked-reward u0) (* (/ stacked-reward u100) u2) u0));; Calculate pot starter's reward
-
-            (claimer tx-sender) ;; Calculate claimer's reward
-            (claimer-reward (if (> stacked-reward u0) (* (/ stacked-reward u100) u2) u0))
+            (winner (get participant (unwrap! (map-get? pot-participants-by-id pot-winner-id) (err u995))))
         )
         ;; Validate can claim pot
         (asserts! (validate-can-claim-pot) ERR_POT_CLAIM_NOT_REACHED)
@@ -390,40 +374,6 @@
         ;; Disburse rewards
         (try! (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots dispatch-rewards pot-contract)))
 
-        ;; Print
-        (print {
-            ;; Pot Values
-            event: "claim-pot-reward",
-            ;; Pot Round Values
-            pot-participants-count: total-participants,
-            pot-participants: participants,
-            pot-value: (var-get total-pot-value),
-            pot-yield-amount: stacked-reward,
-            ;; Winner Values
-            winners-values: (var-get winners-values),
-            ;; Starter Values
-            starter-address: pot-starter,
-            starter-reward-amount: pot-starter-reward,
-            ;; Claimer Values
-            claimer-address: claimer,
-            claimer-reward-amount: claimer-reward,
-            ;; Pot Values
-            pot-id: pot-id,
-            pot-address: pot-treasury-address,
-            pot-owner: pot-admin,
-            ;; Pot Config Values
-            pot-name: pot-name,
-            pot-type: pot-type,
-            pot-cycle: pot-cycle,
-            pot-reward-token: "sbtc",
-            pot-min-amount: pot-min-amount,
-            pot-max-participants: pot-max-participants,
-            ;; Pot Origination Values
-            origin-contract-sha-hash: origin-contract-sha-hash,
-            stacks-block-height: stacks-block-height,
-            burn-block-height: burn-block-height
-        })
-        ;; Execution complete
         (ok true)
     )
 )

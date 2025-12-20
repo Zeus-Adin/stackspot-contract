@@ -193,6 +193,7 @@
                 pot-yield-amount: pot-yield,
                 ;; Winner Values
                 winners-values:  (unwrap! (get winners-values pot-details) ERR_NOT_FOUND),
+                winner-reward: winner-reward,
                 ;; Starter Values
                 starter-address: pot-starter-address,
                 starter-reward-amount: pot-starter-reward,

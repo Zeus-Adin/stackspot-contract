@@ -259,9 +259,7 @@
         (asserts! (is-eq pot-contract (contract-of contract)) ERR_UNAUTHORIZED)
         (asserts! (is-eq contract-caller (contract-of contract)) ERR_UNAUTHORIZED)
 
-        (try! (contract-call? .stackspot-distribute dispatch-rewards contract))
-
-        (ok true)
+        (contract-call? .stackspot-distribute dispatch-rewards contract)
     )
 )
 
