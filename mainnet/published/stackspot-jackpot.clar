@@ -322,7 +322,7 @@
         (asserts! (validate-pot-value-target-is-met) ERR_INSUFFICIENT_REWARD)
 
         ;; Validate can pool pot
-        (asserts! (validate-can-pool-pot) ERR_POOL_ENTRY_PASSED)
+        ;; (asserts! (validate-can-pool-pot) ERR_POOL_ENTRY_PASSED)
         ;; Validate pot treasury is the same as the pot contract
         (asserts! (is-eq pot-treasury-address (contract-of pot-contract)) ERR_UNAUTHORIZED)
 
