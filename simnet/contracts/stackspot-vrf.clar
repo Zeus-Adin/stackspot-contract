@@ -16,6 +16,7 @@
       (merged-buff (concat stacks-block-hash senders-principal-hash))
       (merged-sha256 (sha256 merged-buff))
       (lower-16-le-sha256 (lower-16-le merged-sha256))
+      ;; Convert the lower 16 bytes of a buff into a little-endian uint
       (uint-lower-16-le-sha256 (buff-to-uint-le lower-16-le-sha256))
     )
     (print {
@@ -31,7 +32,7 @@
 
 ;;;;  UTILITIES
 
-;;;;  Convert the lower 16 bytes of a buff into a little-endian uint.
+;;;; extract lower 16 bytes from a 32-byte buff
 (define-read-only (lower-16-le (input (buff 32)))
   (unwrap-panic (as-max-len? (unwrap-panic (slice? input u16 u32)) u16))
 )
