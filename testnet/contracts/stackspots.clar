@@ -146,7 +146,7 @@
 
 (define-private (log-pot (pot-values (buff 2048)))
     (begin
-        (asserts! (is-ok (contract-call? .stackspot-registery log-pot pot-values)) ERR_LOG_FAILED)
+        (asserts! (is-ok (contract-call? .stackspot-registry log-pot pot-values)) ERR_LOG_FAILED)
         (ok true)
     )
 )
@@ -252,10 +252,8 @@
         (
             (pot-detailes (unwrap! (get-pot-info (contract-of contract)) ERR_NOT_FOUND))
             (pot-contract (get pot-contract pot-detailes))
-            (is-audited (unwrap! (contract-call? .stackspot-audited-contracts is-audited-contract contract) ERR_NOT_FOUND))
         )
 
-        (asserts! is-audited ERR_NOT_CONTRACT_AUDITED)
         (asserts! (is-eq pot-contract (contract-of contract)) ERR_UNAUTHORIZED)
         (asserts! (is-eq contract-caller (contract-of contract)) ERR_UNAUTHORIZED)
 
@@ -282,5 +280,3 @@
         (ok true)
     )
 )
-
-(update-fee u100000)

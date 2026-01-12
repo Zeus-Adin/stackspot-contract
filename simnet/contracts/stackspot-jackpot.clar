@@ -312,16 +312,18 @@
 ;; Public Function That Starts The Jackpot
 (define-public (start-stackspot-jackpot (pot-contract <stackspot-trait>))
     (begin
-        (var-set lock-burn-height (some burn-block-height))
 
-        ;; Validate reward covers pot deployment fees
+        ;; Validates pot is not already started
+        (asserts! (not (var-get locked)) ERR_POT_ALREADY_STARTED)
+        ;; Validate pot value target is met
         (asserts! (validate-pot-value-target-is-met) ERR_INSUFFICIENT_REWARD)
-
         ;; Validate pot is not cancelled
         (asserts! (not (var-get pot-cancelled)) ERR_POT_CANCELLED)
-
         ;; Validate pot treasury is the same as the pot contract
         (asserts! (is-eq pot-treasury-address (contract-of pot-contract)) ERR_UNAUTHORIZED)
+
+        ;; Set lock burn height
+        (var-set lock-burn-height (some burn-block-height))
 
         ;; Delegate treasury to pot contract
         (try! (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots delegate-treasury pot-contract pot-treasury-address)))
@@ -330,7 +332,7 @@
         (var-set pot-starter-principal (some tx-sender))
 
         ;; Lock pot
-        (var-set locked true)
+        (var-set locked true)        
 
         ;; Print
         (print {
@@ -341,7 +343,8 @@
             pot-participants: (unwrap! (get-pot-participants) ERR_NOT_FOUND),
             pot-value: (var-get total-pot-value),
             pot-locked: (var-get locked),
-            pot-lock-burn-height: burn-block-height,
+            pot-lock-burn-height: (default-to burn-block-height (var-get lock-burn-height)),
+            pot-cancelled: (var-get pot-cancelled),
         })
 
         ;; Execution complete
@@ -364,22 +367,25 @@
             (total-participants (get pot-participants-count pot-details))
 
             (participants (unwrap! (get-pot-participants) (err u998))) ;; Get participants list
-            (stacked-reward (unwrap! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sbtc-token get-balance pot-treasury-address) (err u997))) ;; Get stacked reward
+            (pot-yield (unwrap! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sbtc-token get-balance pot-treasury-address) (err u997))) ;; Get stacked reward
+            
+            (pot-deploy-fee (/ (* pot-yield u5) u100))
+            (platform-royalty-reward (/ (* pot-yield u1) u100))
+
+            (pot-starter (get pot-starter-address pot-details))
+            (pot-starter-reward (if (> pot-yield u0) (* (/ pot-yield u100) u2) u0));; Calculate pot starter's reward
+
+            (claimer tx-sender) ;; Calculate claimer's reward
+            (claimer-reward (if (> pot-yield u0) (* (/ pot-yield u100) u2) u0))
 
             (pot-winner-id (unwrap! (get-random-index total-participants) (err u996)))
             (winner-values (unwrap! (map-get? pot-participants-by-id pot-winner-id) (err u995)))
             (winner (get participant winner-values))
-            (winners-reward (* (/ stacked-reward u100) u90)) ;; Calculate winner's reward 99% of stacked reward or 100% of stacked reward
-
-            (pot-starter (get pot-starter-address pot-details))
-            (pot-starter-reward (if (> stacked-reward u0) (* (/ stacked-reward u100) u2) u0));; Calculate pot starter's reward
-
-            (claimer tx-sender) ;; Calculate claimer's reward
-            (claimer-reward (if (> stacked-reward u0) (* (/ stacked-reward u100) u2) u0))
+            (winners-reward (- pot-yield platform-royalty-reward pot-deploy-fee pot-starter-reward claimer-reward)) ;; Calculate winner's reward 90% of stacked reward or 100% of stacked reward
         )
         ;; Validate can claim pot
         (asserts! (validate-can-claim-pot) ERR_POT_CLAIM_NOT_REACHED)
-        (asserts! (> stacked-reward u0) ERR_INSUFFICIENT_POT_REWARD)
+        (asserts! (> pot-yield u0) ERR_INSUFFICIENT_POT_REWARD)
 
         ;; Set pot claimer principal
         (var-set pot-claimer-principal (some tx-sender))
@@ -401,7 +407,7 @@
             pot-participants-count: total-participants,
             pot-participants: participants,
             pot-value: (var-get total-pot-value),
-            pot-yield-amount: stacked-reward,
+            pot-yield-amount: pot-yield,
             ;; Winner Values
             winners-values: (var-get winners-values),
             ;; Starter Values

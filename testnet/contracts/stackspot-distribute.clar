@@ -5,7 +5,6 @@
 ;; --- Authorization
 (define-constant ERR_UNAUTHORIZED (err u1101))
 (define-constant ERR_POT_CLAIM_NOT_REACHED (err u1402))
-(define-constant ERR_POOL_ENTRY_PASSED (err u1403))
 (define-constant ERR_INSUFFICIENT_POT_REWARD (err u1304))
 (define-constant ERR_DISPATCH_FAILED (err u1108))
 (define-constant ERR_LOG_FAILED (err u1107))
@@ -32,18 +31,6 @@
             cycle-end: next-cycle-start,
             reward-release: (+ next-cycle-start u432)
         })
-    )
-)
-
-;; pot Join End validation
-(define-read-only (validate-can-pool-pot (lock-burn-height uint))
-    (let
-        (
-            (pool-config (unwrap! (get-pool-config lock-burn-height) false))
-            (join-end (get join-end pool-config))
-        )
-       (asserts! (< burn-block-height join-end) false)
-       true
     )
 )
 
@@ -179,7 +166,7 @@
 
         ;; Dispatch winner reward
         (and (> winner-reward u0)
-            (try! (dispatch-rewards-with-sbtc (unwrap! (contract-call? 'ST29A83G76TM23HXCXR0P2C8T52N92ATRVJ2K953R.sbtc-token get-balance pot-treasury) ERR_NOT_FOUND) pot-treasury winner-address (to-consensus-buff? "winner reward")))
+            (try! (dispatch-rewards-with-sbtc winner-reward pot-treasury winner-address (to-consensus-buff? "winner reward")))
         )
 
         (try! (contract-call? .stackspot-winners log-winner (unwrap! (to-consensus-buff?
@@ -245,10 +232,8 @@
             (amount-ustx (stx-get-balance treasury-address))
         )
 
-        ;; Validate's if the pool entry is passed
         ;; ;; Validate's if the pot treasury is the same as the pot treasury address
         ;; ;; Validate's if the contract caller is the allowed caller
-        (asserts! (validate-can-pool-pot burn-block-height) ERR_POOL_ENTRY_PASSED)
         (asserts! (is-eq treasury-address tx-sender) ERR_UNAUTHORIZED)
         (asserts! (is-eq contract-caller .stackspots) ERR_UNAUTHORIZED)
 
