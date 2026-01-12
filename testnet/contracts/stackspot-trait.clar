@@ -36,7 +36,8 @@
                     reward-release: uint
                 },
                 pot-locked: bool,
-                pot-lock-burn-height: uint
+                pot-lock-burn-height: uint,
+                pot-cancelled: bool
             }            
 
             uint          
