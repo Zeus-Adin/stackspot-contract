@@ -17,8 +17,8 @@
 (define-constant ERR_INSUFFICIENT_POT_REWARD (err u1304))
 (define-constant ERR_POT_JOIN_CLOSED (err u1401))
 (define-constant ERR_POT_CLAIM_NOT_REACHED (err u1402))
-(define-constant ERR_POOL_ENTRY_PASSED (err u1403))
-(define-constant ERR_POT_ALREADY_STARTED (err u1404))
+(define-constant ERR_POT_ALREADY_STARTED (err u1403))
+(define-constant ERR_POT_CANCELLED (err u1404))
 (define-constant ERR_MAX_PARTICIPANTS_REACHED (err u1405))
 (define-constant ERR_DELEGATE_FAILED (err u1406))
 (define-constant ERR_DISPATCH_FAILED (err u1108))
@@ -42,6 +42,7 @@
 ;; Locking Mechanism To Prevent Participants From Trying To Join The Pot While The Pot Is Stacked In Pool
 (define-data-var locked bool false)
 (define-data-var lock-burn-height (optional uint) none)
+(define-data-var pot-cancelled bool false)
 (define-data-var first-user-joined (optional uint) none)
 
 ;; Get PoX Info and return pool config
@@ -50,7 +51,7 @@
 (define-constant MORE_THAN_ONE_CYCLE (+ (get prepare-cycle-length pox-details) (get reward-cycle-length pox-details)) )
 
 ;; Get platform fee
-(define-constant platform-fee (contract-call? 'SP32XNV169ER2N5NJPJ7REG1RBFA3YJ2XEG0236HX.stackspots get-fee ))
+(define-constant platform-fee (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots get-fee ))
 
 (define-read-only (get-pool-config)
     (let (
@@ -68,17 +69,6 @@
             cycle-end: next-cycle-start,
             reward-release: (+ next-cycle-start u432),
         })
-    )
-)
-
-;; pot Join Stop validation
-(define-read-only (validate-can-pool-pot)
-    (let (
-            (pool-config (unwrap! (get-pool-config) false))
-            (join-end (get join-end pool-config))
-        )
-        (asserts! (< (default-to burn-block-height (var-get lock-burn-height)) join-end) false)
-        true
     )
 )
 
@@ -122,6 +112,7 @@
             pool-config: (unwrap! (get-pool-config) ERR_NOT_FOUND),
             pot-locked: (var-get locked),
             pot-lock-burn-height: (default-to burn-block-height (var-get lock-burn-height)),
+            pot-cancelled: (var-get pot-cancelled),
         }
     )
 )
@@ -130,7 +121,7 @@
 ;; Platform Address
 ;; Pot Treasury Address
 (define-constant total-max-participants u100)
-(define-constant platform-address (contract-call? 'SP32XNV169ER2N5NJPJ7REG1RBFA3YJ2XEG0236HX.stackspots get-platform-treasury))
+(define-constant platform-address (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots get-platform-treasury))
 
 (define-constant pot-treasury-address (as-contract tx-sender))
 (define-read-only (get-pot-treasury)
@@ -188,7 +179,7 @@
 (define-read-only (get-pot-participants)
     (let (
             (participants-count (var-get last-participant))
-            (n (contract-call? 'SP32XNV169ER2N5NJPJ7REG1RBFA3YJ2XEG0236HX.stackspot-vrf generate-list u0 participants-count))
+            (n (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspot-vrf generate-list u0 participants-count))
             (participants (match n
                 value (map get-by-id-helper-private value)
                 (list)
@@ -200,7 +191,7 @@
 
 ;; Get Pot ID
 (define-read-only (get-pot-id)
-    (contract-call? 'SP32XNV169ER2N5NJPJ7REG1RBFA3YJ2XEG0236HX.stackspots get-token-id pot-treasury-address)
+    (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots get-token-id pot-treasury-address)
 )
 
 ;; Get Pot Starter Principal
@@ -217,13 +208,7 @@
 (define-private (get-random-index (participant-count uint))
     (let (
             ;; Get random digit from VRF
-            ;; Get sender uint
-            (sender-buff (unwrap! (to-consensus-buff? tx-sender) ERR_NOT_FOUND))
-            (pot-admin-buff (unwrap! (to-consensus-buff? pot-admin) ERR_NOT_FOUND))
-            (merged-buff (concat sender-buff pot-admin-buff))
-            (merged-sha256 (sha256 merged-buff))
-            (merged-sha256-uint (buff-to-uint-le (contract-call? 'SP32XNV169ER2N5NJPJ7REG1RBFA3YJ2XEG0236HX.stackspot-vrf lower-16-le merged-sha256)))
-            (vrf-random-digit (unwrap! (contract-call? 'SP32XNV169ER2N5NJPJ7REG1RBFA3YJ2XEG0236HX.stackspot-vrf get-random-uint-at-block stacks-block-height) ERR_NOT_FOUND))
+            (vrf-random-digit (unwrap! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspot-vrf get-random-uint-at-block stacks-block-height) ERR_NOT_FOUND))
         )
         (ok (mod vrf-random-digit participant-count))
     )
@@ -245,6 +230,7 @@
         (asserts! (not (is-eq participant pot-treasury-address)) ERR_UNAUTHORIZED)
         (asserts! (not (is-eq participant platform-address)) ERR_UNAUTHORIZED)
         (asserts! (not (is-eq participant pot-admin)) ERR_UNAUTHORIZED)
+        (asserts! (not (var-get pot-cancelled)) ERR_POT_CANCELLED)
 
         (asserts! (<= index-participants max-participants)
             ERR_MAX_PARTICIPANTS_REACHED
@@ -307,8 +293,18 @@
       (asserts! (is-eq (contract-of pot-contract) pot-treasury-address) ERR_ADMIN_ONLY)
 
       ;; Returns participants principals
-      (try! (as-contract (contract-call? 'SP32XNV169ER2N5NJPJ7REG1RBFA3YJ2XEG0236HX.stackspots dispatch-principals pot-contract)))
+      (try! (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots dispatch-principals pot-contract)))
 
+      ;; Set pot cancelled to true
+      (var-set pot-cancelled true)
+
+      ;; Print
+      (print {
+        event: "cancel-pot",
+        pot-cancelled: (var-get pot-cancelled),
+      })
+
+      ;; Execution complete
       (ok true)
     )
 )
@@ -316,24 +312,27 @@
 ;; Public Function That Starts The Jackpot
 (define-public (start-stackspot-jackpot (pot-contract <stackspot-trait>))
     (begin
-        (var-set lock-burn-height (some burn-block-height))
 
-        ;; Validate reward covers pot deployment fees
+        ;; Validates pot is not already started
+        (asserts! (not (var-get locked)) ERR_POT_ALREADY_STARTED)
+        ;; Validate pot value target is met
         (asserts! (validate-pot-value-target-is-met) ERR_INSUFFICIENT_REWARD)
-
-        ;; Validate can pool pot
-        ;; (asserts! (validate-can-pool-pot) ERR_POOL_ENTRY_PASSED)
+        ;; Validate pot is not cancelled
+        (asserts! (not (var-get pot-cancelled)) ERR_POT_CANCELLED)
         ;; Validate pot treasury is the same as the pot contract
         (asserts! (is-eq pot-treasury-address (contract-of pot-contract)) ERR_UNAUTHORIZED)
 
+        ;; Set lock burn height
+        (var-set lock-burn-height (some burn-block-height))
+
         ;; Delegate treasury to pot contract
-        (try! (as-contract (contract-call? 'SP32XNV169ER2N5NJPJ7REG1RBFA3YJ2XEG0236HX.stackspots delegate-treasury pot-contract pot-treasury-address)))
+        (try! (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots delegate-treasury pot-contract pot-treasury-address)))
 
         ;; Set pot starter principal
         (var-set pot-starter-principal (some tx-sender))
 
         ;; Lock pot
-        (var-set locked true)
+        (var-set locked true)        
 
         ;; Print
         (print {
@@ -344,7 +343,8 @@
             pot-participants: (unwrap! (get-pot-participants) ERR_NOT_FOUND),
             pot-value: (var-get total-pot-value),
             pot-locked: (var-get locked),
-            pot-lock-burn-height: burn-block-height,
+            pot-lock-burn-height: (default-to burn-block-height (var-get lock-burn-height)),
+            pot-cancelled: (var-get pot-cancelled),
         })
 
         ;; Execution complete
@@ -367,22 +367,25 @@
             (total-participants (get pot-participants-count pot-details))
 
             (participants (unwrap! (get-pot-participants) (err u998))) ;; Get participants list
-            (stacked-reward (unwrap! (contract-call? 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token get-balance pot-treasury-address) (err u997))) ;; Get stacked reward
+            (pot-yield (unwrap! (contract-call? 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token get-balance pot-treasury-address) (err u997))) ;; Get stacked reward
+            
+            (pot-deploy-fee (/ (* pot-yield u5) u100))
+            (platform-royalty-reward (/ (* pot-yield u1) u100))
+
+            (pot-starter (get pot-starter-address pot-details))
+            (pot-starter-reward (if (> pot-yield u0) (* (/ pot-yield u100) u2) u0));; Calculate pot starter's reward
+
+            (claimer tx-sender) ;; Calculate claimer's reward
+            (claimer-reward (if (> pot-yield u0) (* (/ pot-yield u100) u2) u0))
 
             (pot-winner-id (unwrap! (get-random-index total-participants) (err u996)))
             (winner-values (unwrap! (map-get? pot-participants-by-id pot-winner-id) (err u995)))
             (winner (get participant winner-values))
-            (winners-reward (* (/ stacked-reward u100) u90)) ;; Calculate winner's reward 99% of stacked reward or 100% of stacked reward
-
-            (pot-starter (get pot-starter-address pot-details))
-            (pot-starter-reward (if (> stacked-reward u0) (* (/ stacked-reward u100) u2) u0));; Calculate pot starter's reward
-
-            (claimer tx-sender) ;; Calculate claimer's reward
-            (claimer-reward (if (> stacked-reward u0) (* (/ stacked-reward u100) u2) u0))
+            (winners-reward (- pot-yield platform-royalty-reward pot-deploy-fee pot-starter-reward claimer-reward)) ;; Calculate winner's reward 90% of stacked reward or 100% of stacked reward
         )
         ;; Validate can claim pot
         (asserts! (validate-can-claim-pot) ERR_POT_CLAIM_NOT_REACHED)
-        (asserts! (> stacked-reward u0) ERR_INSUFFICIENT_POT_REWARD)
+        (asserts! (> pot-yield u0) ERR_INSUFFICIENT_POT_REWARD)
 
         ;; Set pot claimer principal
         (var-set pot-claimer-principal (some tx-sender))
@@ -391,10 +394,10 @@
         (var-set winners-values (some {winner-id: pot-winner-id, winner-address: winner}))
 
         ;; Returns participants principals
-        (try! (as-contract (contract-call? 'SP32XNV169ER2N5NJPJ7REG1RBFA3YJ2XEG0236HX.stackspots dispatch-principals pot-contract)))
+        (try! (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots dispatch-principals pot-contract)))
 
         ;; Disburse rewards
-        (try! (as-contract (contract-call? 'SP32XNV169ER2N5NJPJ7REG1RBFA3YJ2XEG0236HX.stackspots dispatch-rewards pot-contract)))
+        (try! (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots dispatch-rewards pot-contract)))
 
         ;; Print
         (print {
@@ -404,7 +407,7 @@
             pot-participants-count: total-participants,
             pot-participants: participants,
             pot-value: (var-get total-pot-value),
-            pot-yield-amount: stacked-reward,
+            pot-yield-amount: pot-yield,
             ;; Winner Values
             winners-values: (var-get winners-values),
             ;; Starter Values
@@ -427,7 +430,9 @@
             ;; Pot Origination Values
             origin-contract-sha-hash: origin-contract-sha-hash,
             stacks-block-height: stacks-block-height,
-            burn-block-height: burn-block-height
+            burn-block-height: burn-block-height,
+            lock-burn-height: (default-to burn-block-height (var-get lock-burn-height)),
+            pot-cancelled: (var-get pot-cancelled),
         })
         ;; Execution complete
         (ok true)
@@ -442,5 +447,5 @@
 (define-read-only (get-pot-origin-contract-sha-hash) (ok origin-contract-sha-hash))
 (define-read-only (get-pot-reward-token) (ok "sbtc"))
 
-(as-contract (contract-call? 'SPMPMA1V6P430M8C91QS1G9XJ95S59JS1TZFZ4Q4.pox4-multi-pool-v1 allow-contract-caller 'SP32XNV169ER2N5NJPJ7REG1RBFA3YJ2XEG0236HX.stackspot-distribute none))
+(as-contract (contract-call? 'SPMPMA1V6P430M8C91QS1G9XJ95S59JS1TZFZ4Q4.pox4-multi-pool-v1 allow-contract-caller 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspot-distribute none))
 (as-contract (contract-call? 'SP000000000000000000002Q6VF78.pox-4 allow-contract-caller 'SPMPMA1V6P430M8C91QS1G9XJ95S59JS1TZFZ4Q4.pox4-multi-pool-v1 none))

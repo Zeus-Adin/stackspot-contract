@@ -2,7 +2,7 @@
 (use-trait stackspot-trait .stackspot-trait.stackspot-trait)
 
 ;; Platform address
-(define-constant platform-treasury 'SM2X6FPWK6746NDDAS21DVS17KQWWNFEK05V8SP20) ;; TODO: Change to the actual platform treasury address
+(define-constant platform-treasury 'SM2X6FPWK6746NDDAS21DVS17KQWWNFEK05V8SP20)
 (define-read-only (get-platform-treasury) platform-treasury)
 
 ;; Core errors
@@ -39,7 +39,7 @@
 (define-data-var last-pot-index uint u0)
 
 ;; Core actions
-(define-data-var fee uint u100000)
+(define-data-var fee uint u0)
 (define-public (update-fee (newfee uint))
     (begin
         (asserts! (is-eq tx-sender platform-treasury) ERR_ADMIN_ONLY)
@@ -252,10 +252,8 @@
         (
             (pot-detailes (unwrap! (get-pot-info (contract-of contract)) ERR_NOT_FOUND))
             (pot-contract (get pot-contract pot-detailes))
-            (is-audited (unwrap! (contract-call? .stackspot-audited-contracts is-audited-contract contract) ERR_NOT_FOUND))
         )
 
-        (asserts! is-audited ERR_NOT_CONTRACT_AUDITED)
         (asserts! (is-eq pot-contract (contract-of contract)) ERR_UNAUTHORIZED)
         (asserts! (is-eq contract-caller (contract-of contract)) ERR_UNAUTHORIZED)
 
