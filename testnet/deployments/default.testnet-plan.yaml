@@ -63,5 +63,5 @@ plan:
             cost: 102820
             path: contracts/stackspots.clar
             anchor-block-only: true
-            clarity-version: 3
+            clarity-version: 3        
       epoch: "3.1"
