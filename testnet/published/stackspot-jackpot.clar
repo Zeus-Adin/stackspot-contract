@@ -1,6 +1,6 @@
 ;; --- Traits
-(impl-trait 'ST3ED9M0KHSDNFXWE0J98ZX6GTHWRP0GKAFV4C63D.stackspot-trait.stackspot-trait)
-(use-trait stackspot-trait 'ST3ED9M0KHSDNFXWE0J98ZX6GTHWRP0GKAFV4C63D.stackspot-trait.stackspot-trait)
+(impl-trait 'ST2V0C9F0EM3SS8K4WWZC5RPAA5KHJCQ0JYTBWYKC.stackspot-trait.stackspot-trait)
+(use-trait stackspot-trait 'ST2V0C9F0EM3SS8K4WWZC5RPAA5KHJCQ0JYTBWYKC.stackspot-trait.stackspot-trait)
 
 ;; Errors
 (define-constant ERR_NOT_FOUND (err u1001))
