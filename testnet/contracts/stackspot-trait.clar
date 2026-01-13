@@ -37,7 +37,8 @@
                 },
                 pot-locked: bool,
                 pot-lock-burn-height: uint,
-                pot-cancelled: bool
+                pot-cancelled: bool,
+                is-joined: (optional uint)
             }            
 
             uint          
