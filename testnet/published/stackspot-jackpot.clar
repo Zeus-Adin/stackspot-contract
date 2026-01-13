@@ -448,4 +448,4 @@
 (define-read-only (get-pot-reward-token) (ok "sbtc"))
 
 (as-contract (contract-call? 'ST29W8BBBY984ZY1VD997WKFG1XZSXW4JWY5FM3Z4.sim-pox4-multi-pool-v1 allow-contract-caller 'ST2V0C9F0EM3SS8K4WWZC5RPAA5KHJCQ0JYTBWYKC.stackspot-distribute none))
-(as-contract (contract-call? 'ST000000000000000000002AMW42H.sim-pox-4 allow-contract-caller 'ST29W8BBBY984ZY1VD997WKFG1XZSXW4JWY5FM3Z4.sim-pox4-multi-pool-v1 none))
+(as-contract (contract-call? 'ST000000000000000000002AMW42H.pox-4 allow-contract-caller 'ST29W8BBBY984ZY1VD997WKFG1XZSXW4JWY5FM3Z4.sim-pox4-multi-pool-v1 none))
