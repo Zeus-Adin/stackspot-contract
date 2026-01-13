@@ -10,57 +10,57 @@ plan:
       transactions:        
         - contract-publish:
             contract-name: stackspot-admin
-            expected-sender: ST3ED9M0KHSDNFXWE0J98ZX6GTHWRP0GKAFV4C63D
+            expected-sender: ST2V0C9F0EM3SS8K4WWZC5RPAA5KHJCQ0JYTBWYKC
             cost: 13940
             path: contracts/stackspot-admin.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
             contract-name: stackspot-trait
-            expected-sender: ST3ED9M0KHSDNFXWE0J98ZX6GTHWRP0GKAFV4C63D
-            cost: 21300
+            expected-sender: ST2V0C9F0EM3SS8K4WWZC5RPAA5KHJCQ0JYTBWYKC
+            cost: 21670
             path: contracts/stackspot-trait.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
             contract-name: stackspot-audited-contracts
-            expected-sender: ST3ED9M0KHSDNFXWE0J98ZX6GTHWRP0GKAFV4C63D
+            expected-sender: ST2V0C9F0EM3SS8K4WWZC5RPAA5KHJCQ0JYTBWYKC
             cost: 8430
             path: contracts/stackspot-audited-contracts.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
             contract-name: stackspot-winners
-            expected-sender: ST3ED9M0KHSDNFXWE0J98ZX6GTHWRP0GKAFV4C63D
+            expected-sender: ST2V0C9F0EM3SS8K4WWZC5RPAA5KHJCQ0JYTBWYKC
             cost: 2980
             path: contracts/stackspot-winners.clar
             anchor-block-only: true
             clarity-version: 3        
         - contract-publish:
             contract-name: stackspot-registry
-            expected-sender: ST3ED9M0KHSDNFXWE0J98ZX6GTHWRP0GKAFV4C63D
+            expected-sender: ST2V0C9F0EM3SS8K4WWZC5RPAA5KHJCQ0JYTBWYKC
             cost: 2960
             path: contracts/stackspot-registry.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
             contract-name: stackspot-vrf
-            expected-sender: ST3ED9M0KHSDNFXWE0J98ZX6GTHWRP0GKAFV4C63D
+            expected-sender: ST2V0C9F0EM3SS8K4WWZC5RPAA5KHJCQ0JYTBWYKC
             cost: 53450
             path: contracts/stackspot-vrf.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
             contract-name: stackspot-distribute
-            expected-sender: ST3ED9M0KHSDNFXWE0J98ZX6GTHWRP0GKAFV4C63D
-            cost: 115540
+            expected-sender: ST2V0C9F0EM3SS8K4WWZC5RPAA5KHJCQ0JYTBWYKC
+            cost: 107200
             path: contracts/stackspot-distribute.clar
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
             contract-name: stackspots
-            expected-sender: ST3ED9M0KHSDNFXWE0J98ZX6GTHWRP0GKAFV4C63D
-            cost: 103600
+            expected-sender: ST2V0C9F0EM3SS8K4WWZC5RPAA5KHJCQ0JYTBWYKC
+            cost: 102820
             path: contracts/stackspots.clar
             anchor-block-only: true
             clarity-version: 3
