@@ -45,3 +45,6 @@
         (or caller-is-admin is-public-pot-deploy-enabled)
    )
 )
+
+(add-update-admin-status tx-sender true)
+(add-update-admin-status 'ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5 true)

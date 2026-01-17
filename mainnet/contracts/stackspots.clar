@@ -39,7 +39,7 @@
 (define-data-var last-pot-index uint u0)
 
 ;; Core actions
-(define-data-var fee uint u0)
+(define-data-var fee uint u100000)
 (define-public (update-fee (newfee uint))
     (begin
         (asserts! (is-eq tx-sender platform-treasury) ERR_ADMIN_ONLY)

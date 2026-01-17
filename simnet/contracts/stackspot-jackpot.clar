@@ -113,6 +113,7 @@
             pot-locked: (var-get locked),
             pot-lock-burn-height: (default-to burn-block-height (var-get lock-burn-height)),
             pot-cancelled: (var-get pot-cancelled),
+            is-joined: (map-get? pot-participants-by-principal tx-sender)
         }
     )
 )
