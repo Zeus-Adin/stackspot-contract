@@ -106,7 +106,9 @@ Use the **simnet** contracts and tests as the source of truth; beta mirrors them
 - **Register pot**: Owner calls `stackspots.register-pot` (must pass `can-deploy-pot` and pay fee); contract mints NFT to pot contract, logs via `stackspot-registry`.
 - **Join**: User calls `pot.join-pot(amount)`; STX goes to pot treasury with memo.
 - **Start**: Pot admin calls `pot.start-stackspot-jackpot(pot)`; stackspots delegates treasury to itself then to PoX; pot locks.
-- **Claim**: Any principal calls `pot.claim-pot-reward(pot)` (or Cryptonauts’ `cryptonauts-pay-winner` with chosen winner). Pot calls `stackspots.dispatch-principals` then `stackspots.dispatch-rewards`; stackspots calls `stackspot-distribute` for both; distribute logs via `stackspot-winners`.
+- **Claim** (depends on pot type):
+  - **stackspot-jackpot**: Any principal calls `pot.claim-pot-reward(pot)`. The pot selects the winner at random via VRF, then calls `stackspots.dispatch-principals` and `stackspots.dispatch-rewards`; stackspots forwards to `stackspot-distribute` for both; distribute logs via `stackspot-winners`.
+  - **stackspot-cryptonauts**: Only the pot moderator calls `pot.cryptonauts-pay-winner(pot-contract, winner-address, cryptonauts-treasury-address)` and passes the chosen winner. The pot then calls `stackspots.dispatch-principals` and `stackspots.dispatch-rewards`; stackspots forwards to `stackspot-distribute`; distribute logs via `stackspot-winners`. The pot then resets participant state for the next round.
 
 ---
 
@@ -245,12 +247,17 @@ These are required for the simnet environment but are external to the core Stack
 4. **Reward cycle**
    - During the lock period, the treasury’s STX is delegated to PoX (simnet). sBTC yield is credited to the treasury (or simulated). `validate-can-claim-pot` uses PoX cycle timing and `pot-cycle` to determine when rewards are releasable.
 
-5. **Claim**
-   - Once the reward-release height has passed, anyone (Jackpot) or the moderator (Cryptonauts) calls the claim function with the pot contract. The pot:
-     - Sets claimer and (Jackpot) selects winner via VRF or (Cryptonauts) uses provided winner address.
-     - Calls `stackspots.dispatch-principals(pot)` → all participants get their STX back.
-     - Calls `stackspots.dispatch-rewards(pot)` → platform, owner, starter, claimer, winner receive sBTC.
-   - Cryptonauts then resets participant state and pot vars for the next round.
+5. **Claim** — Behavior differs by pot type:
+
+   **stackspot-jackpot**
+   - Once the reward-release height has passed, **any principal** may call `claim-pot-reward(pot-contract)`.
+   - The pot sets the claimer to `tx-sender`, selects the **winner at random** via `stackspot-vrf` (VRF at current block), then calls `stackspots.dispatch-principals` and `stackspots.dispatch-rewards`. Stackspots forwards to `stackspot-distribute`; principals are refunded (STX) and sBTC is split (platform, owner, starter, claimer, winner). `stackspot-distribute` logs the settlement via `stackspot-winners`.
+   - The pot remains in a claimed state; no reset.
+
+   **stackspot-cryptonauts**
+   - Once the reward-release height has passed, **only the pot moderator** may call `cryptonauts-pay-winner(pot-contract, winner-address, cryptonauts-treasury-address)`. The **winner is chosen by the caller** (not random).
+   - The pot sets the claimer to `tx-sender` and the winner to the provided `winner-address`, then calls `stackspots.dispatch-principals` and `stackspots.dispatch-rewards`. Stackspots forwards to `stackspot-distribute`; principals are refunded and sBTC is distributed; distribute logs via `stackspot-winners`.
+   - The pot then **resets** participant maps and pot vars (`reset-pot-values`) so the same contract can run another round.
 
 6. **Cancel (Jackpot only, before lock)**
    - Pot admin calls `cancel-pot(pot-contract)`. Pot must not be locked and at least one full cycle must have passed since first join. Principals are refunded via `stackspots.dispatch-principals`; `pot-cancelled` is set so the pot cannot be started.
