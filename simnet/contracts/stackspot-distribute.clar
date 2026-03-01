@@ -35,11 +35,11 @@
 )
 
 ;; ;; Pot Claim Start validation
-(define-read-only (validate-can-claim-pot (lock-burn-height uint))
+(define-read-only (validate-can-claim-pot (lock-burn-height uint) (pot-cycle uint))
     (let
         (
             (pool-config (unwrap! (get-pool-config lock-burn-height) false))
-            (reward-release (get reward-release pool-config))
+            (reward-release (* (get reward-release pool-config) pot-cycle))
         )
        (asserts! (> burn-block-height reward-release) false)
        true
@@ -99,6 +99,7 @@
         (
 
             (pot-details (unwrap! (contract-call? contract get-pot-details) ERR_NOT_FOUND))
+            (pot-cycle (unwrap! (contract-call? contract get-pot-cycle) ERR_NOT_FOUND))
 
             (pot-treasury (unwrap! (contract-call? contract get-pot-treasury) ERR_NOT_FOUND))
             (pot-yield (unwrap! (contract-call? .sbtc-token get-balance pot-treasury) ERR_NOT_FOUND))
@@ -137,7 +138,7 @@
         ;; Validate's if the pot yeild is greater than 0
         ;; Validate's if the pot treasury is the same as the tx-sender
         ;; Validate's if the contract caller is the allowed caller
-        (asserts! (validate-can-claim-pot (get pot-lock-burn-height pot-details)) ERR_POT_CLAIM_NOT_REACHED)
+        (asserts! (validate-can-claim-pot (get pot-lock-burn-height pot-details) ) ERR_POT_CLAIM_NOT_REACHED)
         (asserts! (> pot-yield u0) ERR_INSUFFICIENT_POT_REWARD)
         (asserts! (is-eq pot-treasury tx-sender) ERR_UNAUTHORIZED)
         (asserts! (is-eq contract-caller .stackspots) ERR_UNAUTHORIZED)
@@ -193,7 +194,7 @@
                 ;; Pot Config Values
                 pot-name: (unwrap! (contract-call? contract get-pot-name) ERR_NOT_FOUND),
                 pot-type: (unwrap! (contract-call? contract get-pot-type) ERR_NOT_FOUND),
-                pot-cycle: (unwrap! (contract-call? contract get-pot-cycle) ERR_NOT_FOUND),
+                pot-cycle: pot-cycle,
                 pot-reward-token: (unwrap! (contract-call? contract get-pot-reward-token) ERR_NOT_FOUND),
                 pot-min-amount: (unwrap! (contract-call? contract get-pot-min-amount) ERR_NOT_FOUND),
                 pot-max-participants: (unwrap! (contract-call? contract get-pot-max-participants) ERR_NOT_FOUND),

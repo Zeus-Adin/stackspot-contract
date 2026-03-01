@@ -52,6 +52,7 @@
 
 ;; Get platform fee
 (define-constant platform-fee (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots get-fee ))
+(define-constant pot-moderator tx-sender)
 
 (define-read-only (get-pool-config)
     (let (
@@ -85,11 +86,6 @@
         )
         (asserts! (> burn-block-height reward-release) false)
     )
-)
-
-;; This function validates that the reward covers the pot deployment fees`
-(define-read-only (validate-pot-value-target-is-met) 
-    (>= (var-get total-pot-value) (* pot-min-amount pot-max-participants))
 )
 
 (define-read-only (is-locked)
@@ -205,16 +201,6 @@
     (ok (var-get pot-claimer-principal))
 )
 
-;; Get random digit from VRF and return the winner index
-(define-public (get-random-index (participant-count uint))
-    (let (
-            ;; Get random digit from VRF
-            (vrf-random-digit (unwrap! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspot-vrf get-random-uint-at-block stacks-block-height) ERR_NOT_FOUND))
-        )
-        (ok (mod vrf-random-digit participant-count))
-    )
-)
-
 ;; Private helper function that delegates to pot-treasury
 (define-private (delegate-to-pot (amount uint) (participant principal))
     (let
@@ -223,7 +209,7 @@
             (index-participants (var-get last-participant))
             (pot-config (get-configs))
             (max-participants (get max-participants pot-config))
-            (min-amount (get min-amount pot-config))
+            (min-amount (get min-amount pot-config))            
         )
         ;; Participants Eligibility Validations
         (asserts! (>= amount min-amount) ERR_INSUFFICIENT_AMOUNT)
@@ -235,15 +221,17 @@
 
         (asserts! (<= index-participants max-participants)
             ERR_MAX_PARTICIPANTS_REACHED
-        )
-        (asserts!
-            (is-none (map-get? pot-participants-by-principal participant))
-            ERR_DUPLICATE_PARTICIPANT
-        )
+        )        
 
-        ;; Registers Participants Values To The Pot Maps
-        (map-insert pot-participants-by-principal participant index-participants)
-        (map-insert pot-participants-by-id index-participants {participant: participant, amount: amount})
+        ;; Update Participant Amount If Participant Already Exists
+        (match (map-get? pot-participants-by-principal participant) id 
+            (map-set pot-participants-by-id id {participant: participant, amount: (+ amount (default-to u0 (get amount (map-get? pot-participants-by-id id))))})
+            (begin 
+                ;; Registers Participants Values To The Pot Maps
+                (map-insert pot-participants-by-principal participant index-participants)
+                (map-insert pot-participants-by-id index-participants {participant: participant, amount: amount})
+            )
+        )        
 
         ;; Transfers User's Delegated Amount To Pot Treasury
         (asserts! (is-ok (stx-transfer-memo? amount participant pot-treasury-address JOIN_POT_MEMO)) ERR_POT_JOIN_FAILED)
@@ -264,6 +252,36 @@
 
         ;; Execution Complete
         (ok true)
+    )
+)
+
+;; Private helper to clear participants values
+(define-private (reset-map-values (index uint) (res (response bool uint))) 
+    (let 
+        (
+            (participant-values (map-get? pot-participants-by-id index))
+            (participant (unwrap! (get participant participant-values) (err u999)))
+            (amount (get amount participant-values))
+        )
+        (map-delete pot-participants-by-principal participant)
+        (map-delete pot-participants-by-id index)
+        res      
+
+    )
+)
+
+;; Private helper to reset pot values
+(define-private (reset-pot-values)
+    (begin 
+         ;; Reset pot values
+        (var-set lock-burn-height none)
+        (var-set pot-starter-principal none)
+        (var-set pot-claimer-principal none)
+        (var-set locked false)
+        (var-set total-pot-value u0)
+        (var-set last-participant u0)
+        (var-set winners-values none)
+        (var-set first-user-joined none)
     )
 )
 
@@ -289,6 +307,7 @@
 
 (define-public (cancel-pot (pot-contract <stackspot-trait>))
     (begin
+      (asserts! (is-eq tx-sender pot-moderator) ERR_UNAUTHORIZED)
       (asserts! (not (var-get locked)) ERR_POT_ALREADY_STARTED)
       (asserts! (> burn-block-height (+ (default-to burn-block-height (var-get first-user-joined)) MORE_THAN_ONE_CYCLE)) ERR_TOO_EARLY)
       (asserts! (is-eq (contract-of pot-contract) pot-treasury-address) ERR_ADMIN_ONLY)
@@ -296,14 +315,14 @@
       ;; Returns participants principals
       (try! (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots dispatch-principals pot-contract)))
 
-      ;; Set pot cancelled to true
-      (var-set pot-cancelled true)
-
       ;; Print
       (print {
         event: "cancel-pot",
         pot-cancelled: (var-get pot-cancelled),
       })
+
+      ;; Reset pot values
+      (reset-pot-values)
 
       ;; Execution complete
       (ok true)
@@ -314,10 +333,10 @@
 (define-public (start-stackspot-jackpot (pot-contract <stackspot-trait>))
     (begin
 
+        ;; Validate pot moderator is the same as the tx sender
+        (asserts! (is-eq tx-sender pot-moderator) ERR_UNAUTHORIZED)
         ;; Validates pot is not already started
         (asserts! (not (var-get locked)) ERR_POT_ALREADY_STARTED)
-        ;; Validate pot value target is met
-        (asserts! (validate-pot-value-target-is-met) ERR_INSUFFICIENT_REWARD)
         ;; Validate pot is not cancelled
         (asserts! (not (var-get pot-cancelled)) ERR_POT_CANCELLED)
         ;; Validate pot treasury is the same as the pot contract
@@ -354,7 +373,7 @@
 )
 
 ;; Public function that rewards the pot winner, returns participants principals and rewards pot starter and claimer
-(define-public (claim-pot-reward (pot-contract <stackspot-trait>))
+(define-public (cryptonauts-pay-winner (pot-contract <stackspot-trait>) (winner-address principal) (cryptonauts-treasury-address principal))
     (let
         (
             ;; Get pot details
@@ -366,24 +385,28 @@
             ;; @value: pot winner's reward
             (pot-id (get-pot-id))
             (total-participants (get pot-participants-count pot-details))
+            (generate-participants-list (unwrap! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspot-vrf generate-list u0 total-participants) (err u998)))
 
             (participants (unwrap! (get-pot-participants) (err u998))) ;; Get participants list
             (pot-yield (unwrap! (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sbtc-token get-balance pot-treasury-address) (err u997))) ;; Get stacked reward
             
-            (pot-deploy-fee (/ (* pot-yield u5) u100))
-            (platform-royalty-reward (/ (* pot-yield u1) u100))
+            (pot-deploy-fee u0) ;; Pot deploy fee is 0 for now
+            (platform-royalty-reward u0) ;; Platform royalty reward is 0 for now
 
             (pot-starter (get pot-starter-address pot-details))
-            (pot-starter-reward (if (> pot-yield u0) (* (/ pot-yield u100) u2) u0));; Calculate pot starter's reward
+            (pot-starter-reward u0) ;; Pot starter reward is 0 for now
 
             (claimer tx-sender) ;; Calculate claimer's reward
-            (claimer-reward (if (> pot-yield u0) (* (/ pot-yield u100) u2) u0))
+            (claimer-reward u0) ;; Claimer reward is 0 for now
 
-            (pot-winner-id (unwrap! (get-random-index total-participants) (err u996)))
+            (pot-winner-id (unwrap! (map-get? pot-participants-by-principal winner-address) (err u996)))
             (winner-values (unwrap! (map-get? pot-participants-by-id pot-winner-id) (err u995)))
             (winner (get participant winner-values))
             (winners-reward (- pot-yield platform-royalty-reward pot-deploy-fee pot-starter-reward claimer-reward)) ;; Calculate winner's reward 90% of stacked reward or 100% of stacked reward
         )
+        ;; Validate pot moderator is the same as the tx sender
+        (asserts! (is-eq tx-sender pot-moderator) ERR_UNAUTHORIZED)
+
         ;; Validate can claim pot
         (asserts! (validate-can-claim-pot) ERR_POT_CLAIM_NOT_REACHED)
         (asserts! (> pot-yield u0) ERR_INSUFFICIENT_POT_REWARD)
@@ -399,7 +422,7 @@
 
         ;; Disburse rewards
         (try! (as-contract (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots dispatch-rewards pot-contract)))
-
+        
         ;; Print
         (print {
             ;; Pot Values
@@ -435,6 +458,13 @@
             lock-burn-height: (default-to burn-block-height (var-get lock-burn-height)),
             pot-cancelled: (var-get pot-cancelled),
         })
+
+        ;; Reset saved participants values
+        (try! (fold reset-map-values generate-participants-list (ok true)))
+        
+        ;; Reset pot values
+        (reset-pot-values)
+
         ;; Execution complete
         (ok true)
     )
@@ -455,8 +485,8 @@
 (define-constant pot-cycle u1)
 (define-constant pot-min-amount u100)
 (define-constant pot-max-participants u100)
-(define-constant pot-name "StackSpot Jackpot")
-(define-constant pot-type "StackSpot Jackpot")
+(define-constant pot-name "StackSpot Cryptonauts")
+(define-constant pot-type "StackSpot Cryptonauts")
 (define-constant origin-contract-sha-hash "5c15e5196a9c0afb580a242fbafd41cee6d4fcf5f196d3b2fdc92d7ca30e2bba")
 ;; Register pot
 (contract-call? 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.stackspots register-pot {owner: tx-sender, contract: (as-contract tx-sender), cycles: pot-cycle, type: pot-type, pot-reward-token: "sbtc", min-amount: pot-min-amount, max-participants: pot-max-participants, contract-sha-hash: origin-contract-sha-hash})

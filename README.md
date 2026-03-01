@@ -1,191 +1,331 @@
-# 🚀 StackSpot Contracts
+# StacksPot
 
-StackSpot is a lottery-style staking platform for Stacks that coordinates STX delegation, sBTC yield-sharing, and on-chain logging. This repository contains two Clarinet workspaces:
+**StacksPot** is a decentralized lottery-style staking platform on Stacks that coordinates STX delegation, sBTC yield-sharing, and on-chain logging. Participants contribute STX into **pots** (jackpot-style pools), those funds are delegated into Proof of Transfer (PoX) cycles to earn BTC-denominated yield (paid in sBTC), and rewards are distributed according to auditable on-chain rules—including a randomly selected winner, platform fees, and incentives for the pot starter and claimer.
 
-- `simnet/` – authoritative simulation environment and core contracts used for day-to-day development.
-- `beta/` – staging copy meant for packaging/bulk deployments to testnet; contracts mirror the simnet versions but are tuned for deployment drills. Keep documentation about beta concise: it inherits functionality from simnet and is only surfaced when preparing release bundles.
-
-The sections below document every contract that ships inside `simnet/contracts` and give high-level notes for the beta set and the external protocol dependencies StackSpot leans on.
+This repository contains the Clarity smart contracts and simnet test suite. The **simnet** workspace is the authoritative simulation environment used for development; the **beta** workspace is a staging copy for testnet deployment preparation.
 
 ---
 
-## 🎯 Project Summary
+## Table of Contents
 
-StackSpot orchestrates decentralized “pots” (jackpot-style investment pools) where participants contribute STX, delegate those funds into PoX cycles to earn BTC-denominated yield (paid in sBTC), and later share the proceeds according to on-chain, auditable rules. Every pot is represented by a non-transferable NFT in the `stackspots` registry, gated by an admin/audit layer, and instrumented with extensive logging so operators can trace deployments, reward claims, and participant refunds.
-
-**Lifecycle overview**
-- **Pot onboarding**: Admins or approved community members register new pot contracts; a fee is collected, metadata is logged, and the pot initializes with verified code hashes.
-- **Participant intake**: Users join pots through contracts that implement `stackspot-trait`, passing balance/eligibility checks before their STX is transferred to the pot treasury.
-- **Delegation & earning**: Treasury funds can be delegated to PoX pools (via `stackspot-distribute` + `sim-pox-4` helpers) to accrue yield while the join window is locked.
-- **Reward release**: After the configured reward cycle completes, the jackpot contract selects winners through VRF, `stackspots` refunds all principals, and `stackspot-distribute` splits sBTC rewards across platform, owner, starter, claimer, and winner.
-- **Telemetry & compliance**: Registry and winner contracts emit structured buffers for every deployment and payout, simplifying off-chain analytics, auditing, and compliance reporting.
-
-**Key platform capabilities**
-- NFT-based pot registry that ties each treasury to a verifiable deployment record.
-- Configurable jackpot implementation with participant caps, minimum deposits, lock toggles, and VRF-based randomness.
-- Treasury dispatcher that automates both STX refunds and sBTC reward distribution, including configurable royalty slices.
-- Admin/audit layer that separates governance (who can deploy) from compliance (which contracts are allowed to touch funds).
-- PoX delegation tooling (simulated in `simnet/`) so pots can compound yield while awaiting draws.
-- Comprehensive logging and memoized token transfers for transparent post-trade analysis.
+- [Overview](#overview)
+- [Repository Structure](#repository-structure)
+- [System Architecture](#system-architecture)
+- [Contract Reference](#contract-reference)
+- [Pot Lifecycle](#pot-lifecycle)
+- [Reward Distribution](#reward-distribution)
+- [Testing](#testing)
+- [Security and Access Control](#security-and-access-control)
+- [Dependencies](#dependencies)
+- [Development](#development)
+- [License](#license)
 
 ---
 
-## 🗺️ Repository Map
+## Overview
+
+### What StacksPot Does
+
+- **Pot registry**: Each pot is represented by a non-transferable NFT in the `stackspots` contract. Only audited pot contracts can be registered and can later trigger pot value delegations.
+- **Participation**: Users join pots by sending STX to the pot treasury (the pot contract’s principal). Join rules enforce minimum amount, maximum participants, and prevent the platform, pot admin, or treasury from joining. Once the pot is **locked**, no new participants can join.
+- **Delegation**: After locking, the pot treasury’s STX can be delegated to PoX pools (via `stackspot-distribute` and the simnet PoX contracts) to earn yield during the reward cycle.
+- **Settlement**: When the reward cycle has released, anyone may call the pot’s claim function. The contract refunds all participants’ principal (STX), selects a winner (randomly in Jackpot, or by moderator choice in Cryptonauts), and distributes sBTC yield to the platform, pot owner, starter, claimer, and winner according to fixed percentages.
+- **Logging**: Registration and settlement events are logged through `stackspot-registry` and `stackspot-winners` for off-chain analytics and compliance.
+
+### Key Concepts
+
+| Term | Description |
+|------|-------------|
+| **Pot** | A single jackpot-style pool: one treasury (contract principal), a set of participants, and config (min amount, max participants, cycles, etc.). |
+| **Pot treasury** | The contract principal that holds participants’ STX and receives sBTC yield. |
+| **Pot admin** | The deployer/owner of the pot contract; can start the jackpot (and in Jackpot, cancel before lock). |
+| **Pot starter** | The principal that called `start-stackspot-jackpot`; receives a share of sBTC rewards. |
+| **Pot claimer** | The principal that called the claim function; receives a share of sBTC rewards. |
+| **Locked** | After `start-stackspot-jackpot`, the pot is locked: no new joins, treasury may be delegated to PoX. |
+| **Audited contract** | A pot implementation approved in `stackspot-audited-contracts`; required for minting new pots and for dispatch/delegate actions. |
+
+---
+
+## Repository Structure
 
 ```
 stackspot-contracts/
 ├── README.md
 ├── simnet/
-│   ├── Clarinet.toml
-│   ├── contracts/
-│   │   ├── stackspot-*.clar
-│   │   ├── sbtc-*.clar
+│   ├── Clarinet.toml          # Clarinet project and contract list
+│   ├── contracts/            # Clarity contracts (see Contract Reference)
+│   │   ├── stackspot-*.clar  # Core StacksPot contracts
+│   │   ├── sbtc-*.clar       # sBTC token and registry (dependencies)
 │   │   ├── sim-pox-4.clar
 │   │   └── sim-pox4-multi-pool-v1.clar
-│   └── tests, deployments, etc.
+│   └── tests/                # TypeScript tests (Vitest + Clarinet JS)
+│       ├── utils.ts
+│       ├── stackspot-happy-path.test.ts
+│       ├── stackspots.test.ts
+│       ├── stackspot-vrf.test.ts
+│       ├── stackspot-rounding.test.ts
+│       └── stackspot-cryptonauts.test.ts
 └── beta/
-    └── contracts/ (staging copies of the StackSpot suite)
+    └── contracts/            # Staging copies for testnet deployment
 ```
 
-Use absolute paths (e.g. `/mnt/d/.../simnet/contracts/stackspots.clar`) when scripting interactions.
+Use the **simnet** contracts and tests as the source of truth; beta mirrors them for deployment packaging.
 
 ---
 
-## 🧩 Simnet Contract Suite
+## System Architecture
 
-### 🛡️ Platform Governance & Registry Layer
+### Contract Layering
 
-#### 🧑‍✈️ `stackspot-admin.clar`
-- **Purpose**: Maintains the allow-list of platform administrators and toggles whether public users can deploy pots.
-- **Key state**: `admins` map, `public-pot-deploy` flag, implicit `primary-admin` (set to deployer).
-- **Important entrypoints**:
-  - `add-update-admin-status(principal, bool)` – only the primary admin can grant or revoke admin rights.
-  - `update-public-pot-deploy-status(bool)` – flip the public deployment gate; requires existing admin.
-  - `is-admin()` and `can-deploy-pot()` read-only helpers consumed by other contracts (e.g., `stackspots`, `stackspot-audited-contracts`).
+1. **Governance and compliance**
+   - **stackspot-admin**: Who can deploy pots; public deploy flag.
+   - **stackspot-audited-contracts**: Which pot contract principals are allowed to be registered and to trigger dispatch/delegate.
 
-#### ✅ `stackspot-audited-contracts.clar`
-- **Purpose**: Tracks which pot contracts passed audits before they can distribute rewards or delegate treasury control.
-- **Flow**:
-  - Admins (validated via `stackspot-admin`) call `update-audited-contract(<stackspot-trait>, bool)` or `remove-audited-contract`.
-  - Consumers such as `stackspots` and `stackspot-distribute` require `is-audited-contract` to be true before dispatching rewards or delegating pooled STX.
+2. **Registry and logging**
+   - **stackspots**: NFT registry for pots; mints pot NFT, logs deployment, and exposes `dispatch-principals`, `dispatch-rewards`, and `delegate-treasury` that delegate to `stackspot-distribute`.
+   - **stackspot-registry**: Receives deployment logs from `stackspots` only.
+   - **stackspot-winners**: Receives settlement logs from `stackspot-distribute` only.
 
-#### 🪙 `stackspots.clar`
-- **Role**: NFT-based registry for every pot contract deployed on StackSpot.
-- **Highlights**:
-  - Implements SIP-009 NFT `stackpot-pot`.
-  - `register-pot(pot-values)` mints the next NFT, transfers the platform fee, logs deployment metadata via `stackspot-registry`, and guards against non-audited or underfunded deployers.
-  - `mint(principal)` is fee-gated and non-transferable – NFT ownership encodes pot identity and enforces a single contract per pot.
-  - Dispatch helpers (`dispatch-principals`, `dispatch-rewards`, `delegate-treasury`) enforce that only the registered pot contract can trigger settlement routines in `stackspot-distribute`.
+3. **Trait and pot implementations**
+   - **stackspot-trait**: Interface that every pot must implement (treasury, participants, details, pool config, etc.).
+   - **stackspot-jackpot**: Reference pot with VRF-based winner selection; one join per principal; pot admin can cancel before lock.
+   - **stackspot-cryptonauts**: Alternative pot with moderator-selected winner; participants can add more STX over time; pot resets after payout; moderator-only start/cancel/claim.
 
-#### 📓 `stackspot-registry.clar`
-- **Purpose**: Thin logging shim invoked by `stackspots` to emit pot-level telemetry (`log-pot`).
-- **Security**: Accepts calls only from the `stackspots` contract and prints structured pot data for off-chain ingestion.
+4. **Treasury and distribution**
+   - **stackspot-distribute**: Refunds principals (STX with memo), splits sBTC rewards (platform, owner, starter, claimer, winner), and delegates treasury STX to PoX (simnet).
 
-#### 🏆 `stackspot-winners.clar`
-- **Purpose**: Persists settlement telemetry each time rewards are dispatched.
-- **Entry point**: `log-winner(buff)` – callable solely by `stackspot-distribute`; prints the encoded reward breakdown that includes participants, yields, claimer/starter splits, and cycle metadata.
+5. **Randomness**
+   - **stackspot-vrf**: Burn-block–anchored VRF used by Jackpot to pick a random participant index; also provides `generate-list` for ordered participant lists.
 
----
+6. **External protocol (simnet)**
+   - **sbtc-token**, **sbtc-registry**: SIP-010–style sBTC and registry.
+   - **sim-pox-4**, **sim-pox4-multi-pool-v1**: PoX simulation for delegation and cycle timing.
 
-### 🌀 Pot Implementation & Runtime Helpers
+### Call Flow (High Level)
 
-#### 🔐 `stackspot-trait.clar`
-- **Description**: Trait that every StackSpot-compatible pot must implement.
-- **Surface area**: Read-only getters for admin, treasury, participants, yield, configuration (cycle timings, token info, min/max contributions) plus helpers (`get-by-id-helper`, `get-pot-details`, etc.).
-- **Usage**: Enforced by `stackspots`, `stackspot-distribute`, and `stackspot-audited-contracts` to keep pot contracts interchangeable.
-
-#### 🎲 `stackspot-jackpot.clar`
-- **Role**: Reference pot implementation that manages the full jackpot lifecycle (join, lock, delegate to pools, and payout).
-- **Key mechanics**:
-  - Tracks participant slots via `pot-participants-by-*` maps and enforces uniqueness, balance checks, min/max thresholds, and join window locking (`locked` flag).
-  - Uses VRF data to select winners (`get-random-index`) and records starter/claimer principals for royalty splits.
-  - `start-stackspot-jackpot(<stackspot-trait>)` delegates treasury custody to `stackspots`, locks participation, and records the starter.
-  - `claim-pot-reward(<stackspot-trait>)` orchestrates: compute VRF winner → refund principals via `stackspots.dispatch-principals` → trigger reward distribution → emit full round telemetry.
-  - Config constants (min amount, max participants, cycle info, contract hash) live at the foot of the file and are registered with `stackspots` on deploy.
-
-#### 💸 `stackspot-distribute.clar`
-- **Purpose**: Treasury operations contract responsible for refunding principals, splitting sBTC rewards, and delegating pooled STX into PoX.
-- **Notable entrypoints**:
-  - `dispatch-principals(<stackspot-trait>)` – called by `stackspots`; iterates over participants and transfers their principal using STX memos for provenance. Validates pot treasury ownership and caller.
-  - `dispatch-rewards(<stackspot-trait>)` – uses `sbtc-token` to transfer yield to platform, pot owner, starter, claimer, and winner (5%, 90%, etc.). Requires that claim windows are open (`validate-can-claim-pot`) and pot contract is audited.
-  - `delegate-treasury(<stackspot-trait>, principal)` – during the join window, allows audited pots to signal delegation into PoX pools (wiring to `sim-pox4-multi-pool-v1` when uncommented).
-  - Auxiliary read-onlys `get-pool-config`, `validate-can-pool-pot`, and `validate-can-claim-pot` are derived from `sim-pox-4`.
-
-#### 🎯 `stackspot-vrf.clar`
-- **Functionality**: Burn-block-anchored VRF harness used both directly (e.g., `stackspot-jackpot`) and by helper contracts.
-- **Workflow**:
-  1. Fetch burn header hash (`get-burn-block-info?`).
-  2. Concatenate with tx-sender principal.
-  3. Hash and extract lower 16 bytes (little-endian) to produce a deterministic random uint.
-  - Includes buffer utilities (`buff-to-u8`, `lower-16-le`, `generate-list`) for participant shuffling and randomness derivations.
+- **Register pot**: Owner calls `stackspots.register-pot` (must pass `can-deploy-pot` and pay fee); contract mints NFT to pot contract, logs via `stackspot-registry`.
+- **Join**: User calls `pot.join-pot(amount)`; STX goes to pot treasury with memo.
+- **Start**: Pot admin calls `pot.start-stackspot-jackpot(pot)`; stackspots delegates treasury to itself then to PoX; pot locks.
+- **Claim**: Any principal calls `pot.claim-pot-reward(pot)` (or Cryptonauts’ `cryptonauts-pay-winner` with chosen winner). Pot calls `stackspots.dispatch-principals` then `stackspots.dispatch-rewards`; stackspots calls `stackspot-distribute` for both; distribute logs via `stackspot-winners`.
 
 ---
 
-### 🔗 sBTC & PoX Dependencies (Support Contracts)
+## Contract Reference
 
-These contracts are not considered StackSpot core logic but are necessary dependencies for simnet execution. Be brief when referencing them in other docs; summarize only the essentials.
+### Governance and Compliance
 
-1. **`sbtc-token.clar`** – SIP-010 compatible fungible token with bifurcated liquid/locked supplies. Provides protocol-only mint/burn/lock entrypoints guarded by `sbtc-registry`. Also exposes a batch `transfer-many` flow and metadata getters.
-2. **`sbtc-registry.clar`** – Governance contract that tracks active protocol roles (governance, deposit, withdrawal), manages withdrawal/deposit request logs, signer rotations, and enforces role-based authentication used by `sbtc-token`.
-3. **`sim-pox-4.clar`** – Full PoX-4 simulation straight from Stacks 2.1 specs. StackSpot reads reward cycle data to know when delegation is allowed and uses the helper functions when delegating pooled STX. (The contract is long; treat it as the authoritative PoX engine for simnet.)
-4. **`sim-pox4-multi-pool-v1.clar`** – Self-service stacking pool wrapper around `sim-pox-4` that automates delegation, partial commits, and cycle extensions for multiple users. StackSpot references it inside `stackspot-distribute.delegate-treasury` (call commented in simnet) as a future hook for multi-signer pools.
+#### `stackspot-admin.clar`
 
-Although these four files live beside the StackSpot suite, they should be described as dependencies when communicating to integrators—they model how STX and sBTC move but are not modified frequently by the StackSpot team.
+- **Purpose**: Manages platform admins and whether anyone can deploy pots.
+- **State**: `admins` (principal → bool), `public-pot-deploy` (bool). Deployer is the primary admin.
+- **Public functions**:
+  - `add-update-admin-status(admin principal, enable bool)` — Primary admin only; sets admin status.
+  - `update-public-pot-deploy-status(enable bool)` — Any admin; toggles public pot deployment.
+- **Read-only**: `is-admin`, `can-deploy-pot` — Used by `stackspots` and `stackspot-audited-contracts`.
 
----
+#### `stackspot-audited-contracts.clar`
 
-## 🧪 Beta Contracts (Deployment Prep)
-
-The `beta/contracts` directory contains trimmed copies of the StackSpot contracts (admin, audited-contracts, distribute, trait, vrf, winners, stackspots, and `stackspot-registery.clar`, which is the same logger with a historical spelling). They exist so we can stage Clarinet projects for bulk deployment on testnet:
-
-- **No new logic** is introduced in beta; we simply mirror the simnet code and adjust metadata or network settings during release candidates.
-- Documentation for beta should always reference the simnet descriptions above; only mention beta when describing release processes (e.g., "copy simnet contracts to beta, run Clarinet for testnet addresses, deploy as a bundle").
-
----
-
-## 🔄 System Workflow Recap
-
-1. **Deployment**
-   - Admins register audited pot contracts through `stackspots.register-pot`, which mints a non-transferable NFT and records metadata in `stackspot-registry`.
-2. **Participation**
-   - Users interact with the pot implementation (e.g., `stackspot-jackpot.join-pot`). Contributions are validated and transferred into the pot treasury (the contract principal).
-3. **Stacking / Delegation**
-   - Pot owners (or automation) trigger `start-stackspot-jackpot`, which delegates STX custody to `stackspots` and optionally further to PoX pools (`stackspot-distribute.delegate-treasury`) while locking the join window.
-4. **Settlement**
-   - After reward release, anyone can call `claim-pot-reward`. This sets claimer/final state, dispatches principal refunds, distributes sBTC rewards, and logs telemetry in `stackspot-winners`.
-5. **Audit & Governance**
-   - Admin contracts gate who can deploy, when public deployments are open, and which pots are considered audited before treasury actions proceed.
+- **Purpose**: Allow-list of pot contract principals that are considered audited.
+- **State**: `audited-contracts` (principal → bool).
+- **Public functions**:
+  - `update-audited-contract(contract <stackspot-trait>, is-audited bool)` — Admin only (via stackspot-admin).
+  - `remove-audited-contract(contract <stackspot-trait>)` — Admin only.
+- **Read-only**: `is-audited-contract(contract)` — Used by stackspots (register-pot, delegate-treasury) and by pot logic.
 
 ---
 
-## 🛠️ Development & Testing
+### Registry and Logging
 
-The Clarinet workspace under `simnet/` holds TypeScript tests (Vitest) that cover the jackpot flow, registry logging, VRF outputs, and PoX integrations. Typical workflow:
+#### `stackspots.clar`
+
+- **Purpose**: Central pot registry and gate for principal refunds, reward distribution, and delegation.
+- **Implements**: SIP-009 NFT trait as `stackpot-pot` (non-transferable; transfer always errors).
+- **State**: `stackpot-pot` NFT, `pot-contract-with-index`, `pot-id-info`, `last-pot-index`, `fee`.
+- **Public functions**:
+  - `register-pot(pot-values)` — Registers a new pot: checks `can-deploy-pot`, balance ≥ fee, tx-sender is owner, contract hash non-empty; mints NFT to pot contract; logs via `stackspot-registry`; increments index.
+  - `mint(recipient)` — Called by owner during register; recipient must be contract; transfers fee to platform; mints NFT to pot contract; stores pot info.
+  - `dispatch-principals(contract)` — Callable only by the registered pot contract; forwards to `stackspot-distribute.dispatch-principals`.
+  - `dispatch-rewards(contract)` — Callable only by the pot contract; forwards to `stackspot-distribute.dispatch-rewards`.
+  - `delegate-treasury(contract, delegate-to)` — Requires audited contract; callable only by the pot contract; forwards to `stackspot-distribute.delegate-treasury`.
+- **Read-only**: `get-fee`, `get-platform-treasury`, `get-token-id(owner)`, `get-pot-info(owner)`, NFT getters.
+
+#### `stackspot-registry.clar`
+
+- **Purpose**: Logs pot deployment data. Callable only by `stackspots`.
+- **Public**: `log-pot(participant-values buff)` — Prints buffer for off-chain ingestion.
+
+#### `stackspot-winners.clar`
+
+- **Purpose**: Logs settlement data. Callable only by `stackspot-distribute`.
+- **Public**: `log-winner(winner-values buff)` — Prints buffer for off-chain ingestion.
+
+---
+
+### Trait and Pot Implementations
+
+#### `stackspot-trait.clar`
+
+- **Purpose**: Standard interface for all StacksPot-compatible pots.
+- **Surface**: Read-only getters for admin, treasury, pot-id, name, type, cycle, reward token, min/max amount, origin contract hash, pot value, last participant; `get-by-id-helper(id)`; `get-pot-details()` (participants count, value, reward amount, optional winner/starter/claimer, pool-config, locked, lock height, cancelled, is-joined); `get-pot-participants()`.
+
+All pot implementations (Jackpot, Cryptonauts) implement this trait so that `stackspots` and `stackspot-distribute` can work with any compliant pot.
+
+#### `stackspot-jackpot.clar`
+
+- **Purpose**: Reference pot implementation: one join per principal, VRF-based winner, admin can start and (before lock) cancel.
+- **Config (constants)**: `pot-cycle`, `pot-min-amount`, `pot-max-participants`, `pot-name`, `pot-type`, `origin-contract-sha-hash`.
+- **State**: Participants (by principal and by id), `locked`, `lock-burn-height`, `pot-cancelled`, `first-user-joined`, `pot-starter-principal`, `pot-claimer-principal`, `winners-values`, `total-pot-value`, `last-participant`.
+- **Public functions**:
+  - `join-pot(amount)` — Requires not locked, amount ≥ min; prevents duplicate join; blocks pot treasury, platform, and pot admin; STX transferred to treasury with memo.
+  - `cancel-pot(pot-contract)` — Pot admin only; pot must not be locked; requires at least one full cycle since first join; refunds principals via stackspots then sets `pot-cancelled`.
+  - `start-stackspot-jackpot(pot-contract)` — Validates pot value target (≥ min×max), not cancelled, treasury matches; sets lock height; calls stackspots.delegate-treasury; sets starter; locks pot.
+  - `claim-pot-reward(pot-contract)` — Validates claim window (reward release passed) and pot yield > 0; sets claimer and winner (VRF index); dispatches principals then rewards via stackspots; prints event.
+- **Read-only**: `get-pool-config`, `validate-can-claim-pot`, `get-pot-details`, `get-pot-participants`, `get-random-index(participant-count)` (uses stackspot-vrf), and all trait getters.
+- **Deployment**: Contract initializer registers the pot with stackspots using the config constants.
+
+#### `stackspot-cryptonauts.clar`
+
+- **Purpose**: Alternative pot with moderator-selected winner and repeat participation; pot state resets after payout.
+- **Differences from Jackpot**:
+  - **Moderator**: `pot-moderator` (deployer) must start, cancel, and call `cryptonauts-pay-winner`. Pot admin cannot cancel; only moderator can.
+  - **Participation**: Same principal can call `join-pot` multiple times; amount is added to existing entry (single slot per principal, cumulative amount).
+  - **Winner**: Chosen by caller: `cryptonauts-pay-winner(pot-contract, winner-address, cryptonauts-treasury-address)`.
+  - **After payout**: Participant maps are cleared and pot vars reset (`reset-pot-values`), so the same contract can run another round.
+- **Rewards**: In the current implementation, platform royalty, pot fee, starter, and claimer rewards are set to 0; winner receives full pot yield (minus any future splits if added).
+- **Public functions**: `join-pot`, `cancel-pot` (moderator only), `start-stackspot-jackpot` (moderator only), `cryptonauts-pay-winner(pot-contract, winner-address, cryptonauts-treasury-address)` (moderator only).
+
+---
+
+### Treasury and Distribution
+
+#### `stackspot-distribute.clar`
+
+- **Purpose**: Executes principal refunds (STX), sBTC reward splits, and (in simnet) treasury delegation to PoX.
+- **Public functions**:
+  - `dispatch-principals(contract)` — Called by stackspots only; tx-sender must be pot treasury. Fetches participants from pot, transfers each participant’s principal (STX) back with memo `"participant principal"`.
+  - `dispatch-rewards(contract)` — Called by stackspots only; tx-sender must be pot treasury. Ensures claim window and yield > 0; computes 1% platform royalty, 5% pot fee to owner, 2% starter, 2% claimer, remainder to winner; transfers sBTC via `sbtc-token.transfer` with memos; calls `stackspot-winners.log-winner` with full settlement buffer.
+  - `delegate-treasury(contract, delegate-to)` — Called by stackspots only; tx-sender must be pot treasury. Delegates treasury’s STX balance to the PoX multi-pool (simnet) with memo `{c: "sbtc"}`.
+- **Read-only**: `get-pox-info`, `get-pool-config(lock-burn-height)`, `validate-can-claim-pot(lock-burn-height, pot-cycle)`.
+
+---
+
+### Randomness
+
+#### `stackspot-vrf.clar`
+
+- **Purpose**: Burn-block–anchored randomness for fair winner selection and list generation.
+- **Public**: `get-random-uint-at-block(blockHeight)` — Uses Stacks block header hash at `blockHeight - 1` and `tx-sender` principal; concatenates, SHA256, takes lower 16 bytes (little-endian), returns as uint. Used by Jackpot to derive a random participant index.
+- **Read-only**: `lower-16-le(32-byte buffer)` — Returns lower 16 bytes (for VRF); `generate-list(start, length)` — Returns a fixed list slice (indices 0..99) for iterating participants in a deterministic order.
+
+---
+
+### Dependencies (Simnet)
+
+- **sbtc-token.clar**: SIP-010–style fungible token (liquid and locked); protocol mint/burn/lock via sbtc-registry. Used for sBTC reward transfers.
+- **sbtc-registry.clar**: Protocol roles and authorization for sbtc-token.
+- **sim-pox-4.clar**: PoX-4 simulation; provides cycle lengths and burn-block timing.
+- **sim-pox4-multi-pool-v1.clar**: Self-service stacking pool wrapper; stackspot-distribute delegates treasury STX here in simnet.
+
+These are required for the simnet environment but are external to the core StacksPot design; they are not modified as part of normal StacksPot development.
+
+---
+
+## Pot Lifecycle
+
+1. **Deploy and register**
+   - Deploy a pot contract (e.g. stackspot-jackpot or stackspot-cryptonauts). The initializer typically calls `stackspots.register-pot` with owner, contract principal, cycles, type, reward token, min/max, and contract-sha-hash.
+   - Registration requires `stackspot-admin.can-deploy-pot`, tx-sender = owner, owner balance ≥ platform fee, and non-empty contract hash. The pot contract must be marked audited (via `stackspot-audited-contracts`) before it can use dispatch/delegate.
+
+2. **Join**
+   - Users call `pot.join-pot(amount)`. Pot must not be locked; amount ≥ min; principal not already in (Jackpot) or will be merged (Cryptonauts); principal not treasury/platform/admin. STX is sent to the pot treasury with a join memo.
+
+3. **Start (lock and delegate)**
+   - Pot admin (Jackpot) or moderator (Cryptonauts) calls `pot.start-stackspot-jackpot(pot)`. Validations include: not already locked, value target met (Jackpot), not cancelled, treasury = pot contract. Then: set lock height, call `stackspots.delegate-treasury`, set starter, set `locked = true`.
+
+4. **Reward cycle**
+   - During the lock period, the treasury’s STX is delegated to PoX (simnet). sBTC yield is credited to the treasury (or simulated). `validate-can-claim-pot` uses PoX cycle timing and `pot-cycle` to determine when rewards are releasable.
+
+5. **Claim**
+   - Once the reward-release height has passed, anyone (Jackpot) or the moderator (Cryptonauts) calls the claim function with the pot contract. The pot:
+     - Sets claimer and (Jackpot) selects winner via VRF or (Cryptonauts) uses provided winner address.
+     - Calls `stackspots.dispatch-principals(pot)` → all participants get their STX back.
+     - Calls `stackspots.dispatch-rewards(pot)` → platform, owner, starter, claimer, winner receive sBTC.
+   - Cryptonauts then resets participant state and pot vars for the next round.
+
+6. **Cancel (Jackpot only, before lock)**
+   - Pot admin calls `cancel-pot(pot-contract)`. Pot must not be locked and at least one full cycle must have passed since first join. Principals are refunded via `stackspots.dispatch-principals`; `pot-cancelled` is set so the pot cannot be started.
+
+---
+
+## Reward Distribution
+
+When `stackspot-distribute.dispatch-rewards` runs (after principals are refunded), sBTC in the pot treasury is split as follows:
+
+| Recipient    | Share of pot yield | Memo / purpose        |
+|-------------|--------------------|------------------------|
+| Platform    | 1%                 | Platform royalty       |
+| Pot owner   | 5%                 | Pot fee reward         |
+| Pot starter | 2%                 | Pot starter reward     |
+| Claimer     | 2%                 | Claimer reward         |
+| Winner      | Remainder (~90%)   | Winner reward          |
+
+All amounts are computed with integer division. Small yields can round some shares to zero; the winner receives the remainder so no sBTC is left in the treasury (see `stackspot-rounding.test.ts`). Transfers use `sbtc-token.transfer` with consensus-buff memos for auditability.
+
+---
+
+## Testing
+
+Tests live in `simnet/tests/` and use Vitest with the Clarinet JS SDK (`simnet` global).
+
+### Test Files
+
+- **utils.ts**: Helpers `expectSbtcTransferEvent` and `expectStxTransferEvent` for asserting FT and STX transfer events.
+- **stackspot-happy-path.test.ts**: Full flow: deploy pot, add admin, mark audited, mint sBTC, set pool; user joins; admin starts jackpot; rewards sent to pot; advance to reward release; claim; assert STX principal return and sBTC splits (platform, pot fee, starter, claimer, winner). Also: join then cancel after mining past one cycle (ERR_TOO_EARLY then success).
+- **stackspots.test.ts**: Join-pot rules: join once then second join fails (ERR_DUPLICATE_PARTICIPANT); join below minimum (ERR_INSUFFICIENT_AMOUNT); pot owner cannot join (ERR_UNAUTHORIZED); platform address cannot join (ERR_UNAUTHORIZED); insufficient balance (ERR_POT_JOIN_FAILED).
+- **stackspot-vrf.test.ts**: `lower-16-le` behavior: lower 16 bytes of 32-byte buffer, little-endian, edge cases (zeros, max, same lower bytes different upper bytes).
+- **stackspot-rounding.test.ts**: Small reward amount (50 sats): platform royalty rounds to 0; pot fee, starter, claimer get 2, 1, 1; winner gets the remainder (46). Confirms no dust left and correct rounding.
+- **stackspot-cryptonauts.test.ts**: Minimal simnet sanity check (e.g. simnet initialized).
+
+### Running Tests
 
 ```bash
-cd /mnt/d/Csmith/Documents/React-Projects/stackspot-contracts/simnet
+cd simnet
 npm install
-npm test          # Runs Vitest suites
-clarinet test     # Optional: run Clarinet-native tests
+npm test
 ```
 
-When preparing a testnet release:
-
-1. Sync the latest audited simnet contracts into `beta/contracts`.
-2. Update `Clarinet.toml` inside `beta/` with the appropriate principals.
-3. Run `clarinet check` / `clarinet deploy` against your target environment.
+Optional: `clarinet test` for Clarinet-native tests if configured.
 
 ---
 
-## 🔐 Security Notes
+## Security and Access Control
 
-- **Access Control**: All state-changing calls check either `tx-sender` or `contract-caller` against admin lists, audited registries, or pot ownership.
-- **Funds Safety**: Principal refunds use memoized STX transfers for traceability, and rewards are split only after verifying sufficient sBTC balances.
-- **Timing Guards**: Join/claim/delegate functions validate burn block heights against PoX cycles to prevent premature or late actions.
-- **Event Logging**: Every critical action (`register-pot`, `delegate-to-pot`, `dispatch-rewards`, etc.) emits structured prints to simplify off-chain monitoring.
+- **Admins**: Only the primary admin (deployer of stackspot-admin) can add/update admins. Only admins can toggle public pot deploy and manage audited contracts.
+- **Pot registration**: Requires `can-deploy-pot`, sufficient balance for fee, tx-sender = owner, and non-empty contract hash. Mint recipient must be a contract.
+- **Dispatch and delegation**: Only the registered pot contract (matching `get-pot-info`) may call `stackspots.dispatch-principals`, `dispatch-rewards`, and `delegate-treasury`. `delegate-treasury` additionally requires the pot to be audited.
+- **Distribute**: `stackspot-distribute` accepts dispatch/delegate only when `contract-caller` is stackspots and `tx-sender` is the pot treasury (so only stackspots on behalf of the pot can trigger).
+- **Registry and winners**: Only stackspots can call `stackspot-registry.log-pot`; only stackspot-distribute can call `stackspot-winners.log-winner`.
+- **Pot rules**: Join/cancel/start/claim enforce treasury vs platform vs admin, locked state, cycle timing, and (Jackpot) value target and (Cryptonauts) moderator.
+- **Funds**: Principal refunds use memoized STX transfers; sBTC rewards use memoized transfers and fixed percentages; claim is only after reward-release height.
 
 ---
 
-## 📜 License & Contributions
+## Dependencies
 
-Licensed under GPL-3.0. Pull requests are welcome—run both Clarinet and Vitest test suites before submitting, and keep README updates aligned with the simnet contract sources.
+- **Clarinet** and **Clarity** (version and epoch per `Clarinet.toml`).
+- **Vitest** and **@stacks/transactions** (and **@stacks/common**) for simnet tests.
+- **NFT trait**: `SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9.nft-trait` (and optional `ST1NXBK3K5YYMD6FD41MVNP3JS1GABZ8TRVX023PT.nft-trait`) as project requirements in simnet.
+
+---
+
+## Development
+
+1. **Simnet**: Work in `simnet/`. Run `npm test` and `clarinet check` before committing.
+2. **New pot type**: Implement `stackspot-trait`; add to `stackspot-audited-contracts` in simnet; register via `stackspots.register-pot` (e.g. in contract initializer).
+3. **Testnet (beta)**: Copy simnet contracts to `beta/contracts`, update `Clarinet.toml` principals for target network, run `clarinet check` and deployment scripts as needed.
+
+---
+
+## License
+
+Licensed under GPL-3.0. Contributions welcome; please run the simnet test suite and keep documentation aligned with the contracts in `simnet/contracts`.
