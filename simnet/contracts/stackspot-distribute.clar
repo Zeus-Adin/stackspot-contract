@@ -138,7 +138,7 @@
         ;; Validate's if the pot yeild is greater than 0
         ;; Validate's if the pot treasury is the same as the tx-sender
         ;; Validate's if the contract caller is the allowed caller
-        (asserts! (validate-can-claim-pot (get pot-lock-burn-height pot-details) ) ERR_POT_CLAIM_NOT_REACHED)
+        (asserts! (validate-can-claim-pot (get pot-lock-burn-height pot-details) pot-cycle) ERR_POT_CLAIM_NOT_REACHED)
         (asserts! (> pot-yield u0) ERR_INSUFFICIENT_POT_REWARD)
         (asserts! (is-eq pot-treasury tx-sender) ERR_UNAUTHORIZED)
         (asserts! (is-eq contract-caller .stackspots) ERR_UNAUTHORIZED)
